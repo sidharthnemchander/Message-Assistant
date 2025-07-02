@@ -11,7 +11,7 @@ class EmailFetchAgent:
         self.app_password = app_password
         self.imap_server = imap_server
         self.connection: Optional[imaplib.IMAP4_SSL] = None
-
+        
     def strip_html_tags(self,html):
         """
         Simpler version with basic cleaning
@@ -38,8 +38,9 @@ class EmailFetchAgent:
         self.connection.select('"[Gmail]/All Mail"')
 
     def fetch_latest_emails(self) -> List[Dict[str, str]]:
+        print("The getting_mail.py is working")
         assert self.connection is not None, "IMAP connection not established"
-        
+        print("About to search for emails")
         status, all_ids = self.connection.search(None, "ALL")
         status, unread_ids = self.connection.search(None, "UNSEEN")
         
@@ -47,9 +48,9 @@ class EmailFetchAgent:
         unread_id_list = set(unread_ids[0].split())
 
         print(f"Debug: Total emails found: {len(all_id_list)}")
-        print(f"Debug: Email IDs: {[id.decode() for id in all_id_list[-15:]]}")  # Show last 15 IDs
+        print(f"Debug: Email IDs: {[id.decode() for id in all_id_list[1:15]]}")  # Show last 15 IDs
         
-        latest_ids = all_id_list[-10:]
+        latest_ids = all_id_list[1:15]
         print(f"Debug: Attempting to fetch {len(latest_ids)} emails")
 
         results = []

@@ -28,6 +28,7 @@ class ClassifierAgent:
         }
 
     def classify_subject(self, subject: str) -> str:
+        print("The classifier_agent.py is running")
         if not subject.strip():
             return "Others"
         

@@ -13,6 +13,7 @@ classifier_agent = ClassifierAgent()
 @mcp.tool()
 async def get_latest_emails() -> dict:
     """Fetch the latest emails from the inbox"""
+    print("The mcp_server.py is running")
     return await email_agent.fetch_latest_emails()
 
 @mcp.tool()
@@ -22,6 +23,7 @@ async def handle_email_task(task: str) -> dict:
 
 @mcp.tool()
 async def classify_subject(subject: str) -> str:
+    print("The mcp_server.py is running")
     category = classifier_agent.classify_subject(subject)
     return str(category)
 

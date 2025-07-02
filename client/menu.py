@@ -9,8 +9,10 @@ def show_menu():
 
 async def handle_choice(choice: str, session):
     if choice == "1":
+        print("The menu is running")
         await controller.get_emails(session)
     elif choice == "2":
+        print("The menu is running")
         await controller.categorize_emails(session)
     elif choice == "3":
         controller.view_by_category()

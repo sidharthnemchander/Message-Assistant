@@ -1,14 +1,32 @@
 from . import state
+import json
 
 async def get_emails(session):
+    print("The controller is running")
+    
     result = await session.call_tool("get_latest_emails")
-    state.emails = result.content
-    if not state.emails:
-        print("No emails found.")
-    else:
-        print(f"Fetched {len(state.emails)} emails.")
+
+    that_damn_object = result.content[0].text
+    data = json.loads(that_damn_object)
+    email_data = data["emails"]
+    froms = []
+    subjects = []
+    bodys = []
+    unreads = []
+    length = 0
+    for email_obj in email_data:
+        length +=1
+        froms.append(email_obj["from"])
+        subjects.append(email_obj["subject"])
+        bodys.append(email_obj["body"])
+        unreads.append(email_obj["unread"])
+
+    print(subjects)
+    print("No of emails fetched",length )
+
 
 async def categorize_emails(session):
+    print("The controller.py is running")
     if not state.emails:
         print("Please fetch emails first (Option 1).")
         return

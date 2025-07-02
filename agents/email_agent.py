@@ -16,6 +16,7 @@ class EmailAgent:
         """Fetch the latest emails from the inbox"""
         self.agent.connect()
         try:
+            print("The email_agent.py is working")
             emails = self.agent.fetch_latest_emails()
             return {"emails": emails}
         finally:

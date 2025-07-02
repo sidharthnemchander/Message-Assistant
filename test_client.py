@@ -6,7 +6,7 @@ from client.menu import show_menu, handle_choice
 
 async def main():
     server_params = StdioServerParameters(
-        command="python", args=["mcp_server.py"]
+        command="python", args=["-u","mcp_server.py"]
     )
 
     async with stdio_client(server_params) as (read_stream, write_stream):
