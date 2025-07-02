@@ -35,7 +35,7 @@ class EmailFetchAgent:
     def connect(self) -> None:
         self.connection = imaplib.IMAP4_SSL(self.imap_server)
         self.connection.login(self.email_address, self.app_password)
-        self.connection.select("inbox")
+        self.connection.select('"[Gmail]/All Mail"')
 
     def fetch_latest_emails(self) -> List[Dict[str, str]]:
         assert self.connection is not None, "IMAP connection not established"
@@ -46,57 +46,78 @@ class EmailFetchAgent:
         all_id_list = all_ids[0].split()
         unread_id_list = set(unread_ids[0].split())
 
-        latest_ids = all_id_list[-2:]  # or however many you want
+        print(f"Debug: Total emails found: {len(all_id_list)}")
+        print(f"Debug: Email IDs: {[id.decode() for id in all_id_list[-15:]]}")  # Show last 15 IDs
+        
+        latest_ids = all_id_list[-10:]
+        print(f"Debug: Attempting to fetch {len(latest_ids)} emails")
 
         results = []
 
-        for num in latest_ids:
-            status, data = self.connection.fetch(num.decode(), "(RFC822)")
-            for response in data:
-                if isinstance(response, tuple):
-                    msg = message_from_bytes(response[1])
+        for i, num in enumerate(latest_ids):
+            try:
+                print(f"Debug: Processing email {i+1}/{len(latest_ids)} (ID: {num.decode()})")
+                status, data = self.connection.fetch(num.decode(), "(RFC822)")
+                
+                for response in data:
+                    if isinstance(response, tuple):
+                        msg = message_from_bytes(response[1])
 
-                    subject_raw, encoding = decode_header(msg["Subject"])[0]
-                    subject = (
-                        subject_raw.decode(encoding or "utf-8")
-                        if isinstance(subject_raw, bytes)
-                        else subject_raw
-                    )
+                        # Handle subject more safely
+                        subject = "(No Subject)"
+                        if msg["Subject"]:
+                            try:
+                                subject_parts = decode_header(msg["Subject"])
+                                if subject_parts:
+                                    subject_raw, encoding = subject_parts[0]
+                                    subject = (
+                                        subject_raw.decode(encoding or "utf-8")
+                                        if isinstance(subject_raw, bytes)
+                                        else subject_raw or "(No Subject)"
+                                    )
+                            except Exception as e:
+                                print(f"Debug: Subject decode error: {e}")
+                                subject = str(msg["Subject"])[:100]  # Truncate if too long
 
-                    from_ = msg.get("From", "(Unknown Sender)")
-                    body = ""
+                        from_ = msg.get("From", "(Unknown Sender)")
+                        body = ""
 
-                    if msg.is_multipart():
-                        for part in msg.walk():
-                            content_type = part.get_content_type()
-                            content_dispo = str(part.get("Content-Disposition"))
+                        if msg.is_multipart():
+                            for part in msg.walk():
+                                content_type = part.get_content_type()
+                                content_dispo = str(part.get("Content-Disposition"))
 
-                            if content_type == "text/plain" and "attachment" not in content_dispo:
-                                payload = part.get_payload(decode=True)
-                                if isinstance(payload, bytes):
-                                    body = payload.decode("utf-8", errors="ignore").strip()
-                                break  # prefer plain text, stop after first match
+                                if content_type == "text/plain" and "attachment" not in content_dispo:
+                                    payload = part.get_payload(decode=True)
+                                    if isinstance(payload, bytes):
+                                        body = payload.decode("utf-8", errors="ignore").strip()
+                                    break  # prefer plain text, stop after first match
 
-                            elif content_type == "text/html" and not body:
-                                payload = part.get_payload(decode=True)
-                                if isinstance(payload, bytes):
-                                    body = payload.decode("utf-8", errors="ignore").strip()
+                                elif content_type == "text/html" and not body:
+                                    payload = part.get_payload(decode=True)
+                                    if isinstance(payload, bytes):
+                                        body = payload.decode("utf-8", errors="ignore").strip()
 
-                    else:
-                        payload = msg.get_payload(decode=True)
-                        if isinstance(payload, bytes):
-                            body = payload.decode("utf-8", errors="ignore")
+                        else:
+                            payload = msg.get_payload(decode=True)
+                            if isinstance(payload, bytes):
+                                body = payload.decode("utf-8", errors="ignore")
 
-                    is_unread = num in unread_id_list  # ✅ this line added here
-                    body = self.strip_html_tags(body)
+                        is_unread = num in unread_id_list
+                        body = self.strip_html_tags(body)
 
-                    results.append({
-                        "from": from_,
-                        "subject": subject,
-                        "body": body,
-                        "unread": is_unread
-                    })
+                        results.append({
+                            "from": from_,
+                            "subject": subject,
+                            "body": body,
+                            "unread": is_unread
+                        })
+                        print(f"Debug: Successfully processed email: {subject}")
+                        
+            except Exception as e:
+                print(f"Debug: Failed to process email {num.decode()}: {e}")
 
+        print(f"Debug: Successfully processed {len(results)} out of {len(latest_ids)} emails")
         return results
 
 
