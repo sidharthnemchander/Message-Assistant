@@ -21,9 +21,9 @@ async def main():
             for tool in tools_result.tools:
                 print(f"  - {tool.name}: {tool.description}")
 
-              # Call our Weather Tool
+              # Call our get_latest_emails tool
             result = await session.call_tool("get_latest_emails")
-            print(f"The weather alerts are = {result.content}")
+            print(f"The Latest Emails are = {result.content}")
 
 
 if __name__ == "__main__":
