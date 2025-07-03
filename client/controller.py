@@ -9,33 +9,28 @@ async def get_emails(session):
     that_damn_object = result.content[0].text
     data = json.loads(that_damn_object)
     email_data = data["emails"]
-    froms = []
-    subjects = []
-    bodys = []
-    unreads = []
     length = 0
     for email_obj in email_data:
         length +=1
-        froms.append(email_obj["from"])
-        subjects.append(email_obj["subject"])
-        bodys.append(email_obj["body"])
-        unreads.append(email_obj["unread"])
+        state.froms.append(email_obj["from"])
+        state.subjects.append(email_obj["subject"])
+        state.bodys.append(email_obj["body"])
+        state.unreads.append(email_obj["unread"])
 
-    print(subjects)
+    print(state.subjects)
     print("No of emails fetched",length )
 
 
 async def categorize_emails(session):
     print("The controller.py is running")
-    if not state.emails:
+    if not state.subjects:
         print("Please fetch emails first (Option 1).")
         return
 
     state.categorized_emails = {}
 
-    for email in state.emails:
-        subject = getattr(email, "subject", "")
-        result = await session.call_tool("classify_subject", {"subject": subject})
+    for sub in state.subjects:
+        result = await session.call_tool("classify_subject", {"subject": sub})
         
         # Extract category from nested structure
         category = result.content
@@ -61,7 +56,7 @@ async def categorize_emails(session):
         if not category or category.strip() == "":
             category = "Others"
             
-        state.categorized_emails.setdefault(category, []).append(email)
+        state.categorized_emails.setdefault(category, []).append(sub)
 
     print("Emails categorized.")
 
@@ -70,8 +65,10 @@ def view_by_category():
         print("Please classify emails first using Option 2.")
         return
 
+    print(state.categorized_emails)
     print("\nCategories:")
-    for category, emails in state.categorized_emails.items():
-        print(f"\n[{category}] - {len(emails)} emails")
-        for idx, email in enumerate(emails, 1):
-            print(f"  {idx}. {getattr(email, "subject", "(No Subject)")}")
+    for cat , subs in state.categorized_emails.items():
+        print(f"\n[{cat}] - {len(subs)} emails")
+        for i,s in enumerate(subs):
+            print(i + 1,".",s)
+    
