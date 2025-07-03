@@ -7,9 +7,8 @@ load_dotenv()
 
 class LLMChatBot:
     def __init__(self):
-        self.session = None
         self.groq_api_key = os.getenv("GROQ_API_KEY")
-        self.groq_model = "mixtral-8x7b-32768"
+        self.groq_model = "llama-3.1-8b-instant"
         self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
 
     async def summarize(self, email_body: str) -> str:
@@ -31,14 +30,15 @@ class LLMChatBot:
         payload = {
             "model": self.groq_model,
             "messages": [
-                {"role": "system", "content": "You are a helpful assistant that understands and summarizes emails."},
+                {"role": "system", "content": "You are a helpful assistant that understands and summarizes emails. Make your answers precise and don't leave any important points. Use the best structure u find appropriate to answer"},
                 {"role": "user", "content": f"Context:\n{context}\n\nQuestion:\n{question}"}
-            ]
+            ],
+            "max_tokens": 1000,
+            "temperature": 0.7
         }
-
+        
         async with httpx.AsyncClient() as client:
             response = await client.post(self.groq_url, json=payload, headers=headers)
             response.raise_for_status()
-            data = response.json()
-
-        return data["choices"][0]["message"]["content"]
+            return response.json()['choices'][0]['message']['content']
+        

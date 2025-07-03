@@ -2,8 +2,7 @@ from . import state
 import json
 
 async def get_emails(session):
-    print("The controller is running")
-    
+
     result = await session.call_tool("get_latest_emails")
 
     that_damn_object = result.content[0].text
@@ -24,7 +23,6 @@ async def get_emails(session):
 
 
 async def categorize_emails(session):
-    print("The controller.py is running")
     if not state.subjects:
         print("Please fetch emails first (Option 1).")
         return
@@ -95,8 +93,7 @@ async def view_by_category(session):
     check = input().strip()
 
     if(check == 'Y'):
-        print("THIS IS WORKING")
         small_content = await session.call_tool("summarize", {"body": email})
-        print(small_content)
+        print(small_content.content[0].text)
     else:
         return
