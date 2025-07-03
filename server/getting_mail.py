@@ -38,20 +38,15 @@ class EmailFetchAgent:
         self.connection.select('"[Gmail]/All Mail"')
 
     def fetch_latest_emails(self) -> List[Dict[str, str]]:
-        print("The getting_mail.py is working")
         assert self.connection is not None, "IMAP connection not established"
-        print("About to search for emails")
+
         status, all_ids = self.connection.search(None, "ALL")
         status, unread_ids = self.connection.search(None, "UNSEEN")
         
         all_id_list = all_ids[0].split()
         unread_id_list = set(unread_ids[0].split())
 
-        print(f"Debug: Total emails found: {len(all_id_list)}")
-        print(f"Debug: Email IDs: {[id.decode() for id in all_id_list[1:15]]}")  # Show last 15 IDs
-        
-        latest_ids = all_id_list[1:15]
-        print(f"Debug: Attempting to fetch {len(latest_ids)} emails")
+        latest_ids = all_id_list[5:25]
 
         results = []
 
