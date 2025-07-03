@@ -15,7 +15,7 @@ async def handle_choice(choice: str, session):
         print("The menu is running")
         await controller.categorize_emails(session)
     elif choice == "3":
-        controller.view_by_category()
+        await controller.view_by_category(session)
     elif choice == "4":
         print("Exiting...")
         return False

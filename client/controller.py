@@ -14,8 +14,10 @@ async def get_emails(session):
         length +=1
         state.froms.append(email_obj["from"])
         state.subjects.append(email_obj["subject"])
+        state.subjects_to_body[email_obj["subject"]] = email_obj["body"]
         state.bodys.append(email_obj["body"])
-        state.unreads.append(email_obj["unread"])
+        if email_obj["unread"] == "true" :
+            state.unreads.append(email_obj["subject"])
 
     print(state.subjects)
     print("No of emails fetched",length )
@@ -57,18 +59,44 @@ async def categorize_emails(session):
             category = "Others"
             
         state.categorized_emails.setdefault(category, []).append(sub)
-
     print("Emails categorized.")
 
-def view_by_category():
+async def view_by_category(session):
     if not state.categorized_emails:
         print("Please classify emails first using Option 2.")
         return
 
     print(state.categorized_emails)
     print("\nCategories:")
+    cnt = 1
     for cat , subs in state.categorized_emails.items():
-        print(f"\n[{cat}] - {len(subs)} emails")
+        print(f"\n{cnt}[{cat}] - {len(subs)} emails")
+        cnt+=1
+        state.num_cat[cnt] = cat
         for i,s in enumerate(subs):
             print(i + 1,".",s)
     
+    print("Enter the Category Index to view the emails")
+    user_input = int(input())
+    req_cat = state.num_cat[user_input+1]
+    req_subs = state.categorized_emails[req_cat]
+
+    for i , sub_name in enumerate(req_subs):
+        print(i+1,".",sub_name)
+        state.sub_ind_to_body[i+1] = state.subjects_to_body[sub_name]
+    print("Enter the index of the sub to view")
+
+    sub_view = int(input())
+    email = state.sub_ind_to_body[sub_view]
+    print(email)
+
+    print("Type 'Y' to use AI for summarization or type something else")
+
+    check = input().strip()
+
+    if(check == 'Y'):
+        print("THIS IS WORKING")
+        small_content = await session.call_tool("summarize", {"body": email})
+        print(small_content)
+    else:
+        return
