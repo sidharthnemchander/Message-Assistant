@@ -34,4 +34,4 @@ class EmailAgent:
         try:
             return self.send_agent.send_email(sub,to,body)
         except Exception as e:
-            print("error", e)
+            return {"error",str(e)}

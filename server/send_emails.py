@@ -1,5 +1,6 @@
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 class EmailSendAgent:
     def __init__(self,send_add : str, mail_pass : str, smtp_server: str = "smtp.gmail.com"):
@@ -8,8 +9,8 @@ class EmailSendAgent:
         self.smtp_server = smtp_server
         self.port = 587
         
-    async def send_email(self, subject : str , To : str, Body : str):
-        message = MIMEText(Body)
+    def send_email(self, subject : str , To : str, Body : str):
+        message = MIMEMultipart()
         message["Subject"] = subject
         message["From"] = self.email_address
         message["To"] = To

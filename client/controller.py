@@ -1,5 +1,6 @@
 from . import state
 import json
+from email.utils import parseaddr
 
 async def get_emails(session):
 
@@ -103,7 +104,8 @@ async def send_emails(session):
 
     u_inp = input().strip()
     if(u_inp == 'froms'):
-        print(state.froms)
+        email_addresses = [parseaddr(sender)[1] for sender in state.froms]
+        print(email_addresses)
         send_add = input("Enter the address here : ").strip()
     else:
         send_add = u_inp
