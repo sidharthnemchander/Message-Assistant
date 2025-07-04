@@ -1,24 +1,14 @@
-from dotenv import load_dotenv
-import os
-from pathlib import Path
 import smtplib
 from email.mime.text import MIMEText
-from typing import cast
-
-env_path = Path(__file__).resolve().parent.parent / "agents" / ".env"
-load_dotenv(dotenv_path = env_path)
-
-email = cast(str,os.getenv("EMAIL_ADDRESS"))
-password = cast(str,os.getenv("EMAIL_PASSWORD"))
 
 class EmailSendAgent:
-    def __init__(self,smtp_server: str = "smtp.gmail.com"):
-        self.email_address = email
-        self.app_password = password
+    def __init__(self,send_add : str, mail_pass : str, smtp_server: str = "smtp.gmail.com"):
+        self.email_address = send_add
+        self.app_password = mail_pass
         self.smtp_server = smtp_server
         self.port = 587
         
-    def send_email(self, subject : str , To : str, Body : str):
+    async def send_email(self, subject : str , To : str, Body : str):
         message = MIMEText(Body)
         message["Subject"] = subject
         message["From"] = self.email_address

@@ -17,6 +17,8 @@ async def handle_choice(choice: str, session):
     elif choice == "4":
         print("Exiting...")
         return False
+    elif choice == "5":
+        await controller.send_emails(session)
     else:
         print("Invalid choice.")
     return True

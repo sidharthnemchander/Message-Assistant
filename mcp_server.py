@@ -35,6 +35,11 @@ async def summarize(body : str) -> str:
     summarize_content = await bot.summarize(body)
     return str(summarize_content)
 
+@mcp.tool()
+async def send_emails(subject : str, to : str, body : str):
+    """Sending an email through send_emails.py"""
+    return await email_agent.send_emails(subject,to,body)
+
 if __name__ == "__main__":
     # Run the server
     print("Starting the server")

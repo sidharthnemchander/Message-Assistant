@@ -97,3 +97,17 @@ async def view_by_category(session):
         print(small_content.content[0].text)
     else:
         return
+
+async def send_emails(session):
+    print("Enter the email address you want to send it to : (press 'froms' to check the from addresses)")
+
+    u_inp = input().strip()
+    if(u_inp == 'froms'):
+        print(state.froms)
+        send_add = input("Enter the address here : ").strip()
+    else:
+        send_add = u_inp
+    
+    sub = input("Enter the subject of your email : ").strip()
+    body = input("Enter the Body of your email : ")
+    await session.call_tool("send_emails", {"subject" : sub, "to" : send_add, "body" : body})
