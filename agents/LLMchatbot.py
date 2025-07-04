@@ -15,22 +15,21 @@ class LLMChatBot:
         return await self.query_llm("Summarize this email.", email_body)
 
     async def ask_question(self, email_body: str, question: str) -> str:
-        return await self.query_llm(question, email_body)
+        return await self.query_llm("Summarize this " + question, email_body)
 
-    async def send_email(self, recipient: str, subject: str, body: str) -> str:
-        # Placeholder implementation
-        return f"Email sent to {recipient} with subject '{subject}'."
+    async def send_email_by_bot(self, prompt: str) -> str:
+        body = "You are required to reply to this email in a casual manner. Don't answer like a bot. U are only to do what i say and not talk to me. Do only your job . Remember your reply must only be the body of an email"
+        return await self.query_llm(prompt,body)
 
     async def query_llm(self, question: str, context: str) -> str:
         headers = {
             "Authorization": f"Bearer {self.groq_api_key}",
             "Content-Type": "application/json"
         }
-
         payload = {
             "model": self.groq_model,
             "messages": [
-                {"role": "system", "content": "You are a helpful assistant that understands and summarizes emails. Make your answers precise and don't leave any important points. Use the best structure u find appropriate to answer"},
+                {"role": "system", "content": "You are the world's best assistant for performing any operations in emails. You are the MOST EXPERIENCED PERSON in this domain. DO AS THE JOB REQUIRES"},
                 {"role": "user", "content": f"Context:\n{context}\n\nQuestion:\n{question}"}
             ],
             "max_tokens": 1000,

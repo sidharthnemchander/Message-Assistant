@@ -101,7 +101,6 @@ async def view_by_category(session):
 
 async def send_emails(session):
     print("Enter the email address you want to send it to : (press 'froms' to check the from addresses)")
-
     u_inp = input().strip()
     if(u_inp == 'froms'):
         email_addresses = [parseaddr(sender)[1] for sender in state.froms]
@@ -113,3 +112,26 @@ async def send_emails(session):
     sub = input("Enter the subject of your email : ").strip()
     body = input("Enter the Body of your email : ")
     await session.call_tool("send_emails", {"subject" : sub, "to" : send_add, "body" : body})
+
+async def send_emails_through_Groq(session):
+    print("Enter the email address you want to send it to : (press 'froms' to check the from addresses)")
+    # Showing all the current from addresses
+    u_inp = input().strip()
+    if(u_inp == 'froms'):
+        f_list = state.froms
+        while f_list == []:
+            await get_emails(session)
+            f_list = state.froms
+        email_addresses = [parseaddr(sender)[1] for sender in state.froms]
+        print(email_addresses)
+        send_add = input("Enter the address here : ").strip()
+    else:
+        send_add = u_inp
+    prompt = input("Hi Sir, How may i help you : ").strip()
+
+    #Getting Groq's reply
+    obj = await session.call_tool("send_mail_by_Groq",{"prompt": prompt})
+    groq_reply = obj.content[0].text
+
+    #Calling the send email method
+    await session.call_tool("send_emails", {"subject" : "This is a automated reply from groq", "to" : send_add, "body" : groq_reply})

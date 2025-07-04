@@ -40,6 +40,12 @@ async def send_emails(subject : str, to : str, body : str):
     """Sending an email through send_emails.py"""
     return await email_agent.send_emails(subject,to,body)
 
+@mcp.tool()
+async def send_mail_by_Groq(prompt : str) -> str:
+    """Sending the prompt to the Groq's Chat Model"""
+    groq_ans = await bot.send_email_by_bot(prompt)
+    return groq_ans
+
 if __name__ == "__main__":
     # Run the server
     print("Starting the server")

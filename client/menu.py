@@ -6,7 +6,8 @@ def show_menu():
     print("2. Get Categories")
     print("3. View Emails by Category")
     print("4. Send Emails")
-    print("5. Exit")
+    print("5. Send Emails with Bot")
+    print("6. Exit")
 
 async def handle_choice(choice: str, session):
     if choice == "1":
@@ -15,11 +16,13 @@ async def handle_choice(choice: str, session):
         await controller.categorize_emails(session)
     elif choice == "3":
         await controller.view_by_category(session)
-    elif choice == "5":
+    elif choice == "6":
         print("Exiting...")
         return False
     elif choice == "4":
         await controller.send_emails(session)
+    elif choice == "5":
+        await controller.send_emails_through_Groq(session)
     else:
         print("Invalid choice.")
     return True

@@ -52,7 +52,6 @@ class EmailFetchAgent:
 
         for i, num in enumerate(latest_ids):
             try:
-                print(f"Debug: Processing email {i+1}/{len(latest_ids)} (ID: {num.decode()})")
                 status, data = self.connection.fetch(num.decode(), "(RFC822)")
                 
                 for response in data:
@@ -108,7 +107,6 @@ class EmailFetchAgent:
                             "body": body,
                             "unread": is_unread
                         })
-                        print(f"Debug: Successfully processed email: {subject}")
                         
             except Exception as e:
                 print(f"Debug: Failed to process email {num.decode()}: {e}")
