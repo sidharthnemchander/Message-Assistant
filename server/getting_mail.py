@@ -46,7 +46,7 @@ class EmailFetchAgent:
         all_id_list = all_ids[0].split()
         unread_id_list = set(unread_ids[0].split())
 
-        latest_ids = all_id_list[5:25]
+        latest_ids = all_id_list[25:65]
 
         results = []
 

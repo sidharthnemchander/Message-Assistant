@@ -19,7 +19,6 @@ async def get_emails(session):
         if email_obj["unread"] == "true" :
             state.unreads.append(email_obj["subject"])
 
-    print(state.subjects)
     print("No of emails fetched",length )
 
 
@@ -34,24 +33,8 @@ async def categorize_emails(session):
         result = await session.call_tool("classify_subject", {"subject": sub})
         
         # Extract category from nested structure
-        category = result.content
-        
-        # Handle nested lists/structures
-        while isinstance(category, list) and category:
-            category = category[0]
-        
-        # Only try to access attributes if it's not a list
-        if not isinstance(category, list):
-            # Extract text from TextContent object
-            if hasattr(category, 'text'):
-                category = category.text
-            elif hasattr(category, 'content'):
-                category = category.content
-            else:
-                category = str(category)
-        else:
-            # If it's still a list, convert to string
-            category = str(category)
+        category = result.content[0].text
+        category = str(category)
         
         # Fallback to "Others" if empty
         if not category or category.strip() == "":
@@ -69,7 +52,7 @@ async def view_by_category(session):
     print("\nCategories:")
     cnt = 1
     for cat , subs in state.categorized_emails.items():
-        print(f"\n{cnt}[{cat}] - {len(subs)} emails")
+        print(f"\n{cnt}.[{cat}] - {len(subs)} emails")
         cnt+=1
         state.num_cat[cnt] = cat
         for i,s in enumerate(subs):
