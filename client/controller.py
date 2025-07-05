@@ -119,4 +119,16 @@ async def send_emails_through_Groq(session):
     await session.call_tool("send_emails", {"subject" : "This is a automated reply from groq", "to" : send_add, "body" : groq_reply})
 
 async def get_t_messages(session):
+    print("Fetching Telegram messages...")
     messages = await session.call_tool("get_telegram_messages")
+    print(f"Raw result: {messages}")
+    
+    # Check if messages is empty
+    if not messages or str(messages.content[0].text) == '{}':
+        print("No messages found. This could mean:")
+        print("1. The chats have no text messages (only images/stickers)")
+        print("2. All messages are too old")
+        print("3. There's an issue with message fetching")
+    else:
+        print("Messages found:")
+        print(messages.content[0].text)

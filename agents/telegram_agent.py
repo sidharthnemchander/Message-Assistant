@@ -13,4 +13,7 @@ class TelegramAgent:
         self.get_agent = TelegramBotServer(app_id,app_hash_id)
     
     async def fetch_messages(self):
-        return self.get_agent.run()
+        await self.get_agent.fetch_messages()
+        messages = self.get_agent.get_all_messages()
+        print(f"TelegramAgent: Retrieved {len(messages)} chats")
+        return messages
