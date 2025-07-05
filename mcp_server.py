@@ -50,7 +50,16 @@ async def send_mail_by_Groq(prompt : str) -> str:
 @mcp.tool()
 async def get_telegram_messages():
     """Fetching the messages from telegram"""
-    return await telegram_agent.fetch_messages()
+    print("MCP Server: get_telegram_messages called")
+    try:
+        result = await telegram_agent.fetch_messages()
+        print(f"MCP Server: Telegram agent returned: {result}")
+        return result
+    except Exception as e:
+        print(f"MCP Server: Error in get_telegram_messages: {e}")
+        import traceback
+        traceback.print_exc()
+        return {}
 
 if __name__ == "__main__":
     # Run the server
