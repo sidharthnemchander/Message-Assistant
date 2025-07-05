@@ -32,7 +32,6 @@ async def categorize_emails(session):
     for sub in state.subjects:
         result = await session.call_tool("classify_subject", {"subject": sub})
         
-        # Extract category from nested structure
         category = result.content[0].text
         category = str(category)
         
@@ -118,3 +117,6 @@ async def send_emails_through_Groq(session):
 
     #Calling the send email method
     await session.call_tool("send_emails", {"subject" : "This is a automated reply from groq", "to" : send_add, "body" : groq_reply})
+
+async def get_t_messages(session):
+    messages = await session.call_tool("get_telegram_messages")
