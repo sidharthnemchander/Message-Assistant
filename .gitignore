@@ -13,3 +13,7 @@ wheels/
 .env
 .env.*
 *.env
+
+#Session files
+*.session
+send_session.py

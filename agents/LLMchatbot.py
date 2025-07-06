@@ -18,7 +18,7 @@ class LLMChatBot:
         return await self.query_llm("Summarize this " + question, email_body)
 
     async def send_email_by_bot(self, prompt: str) -> str:
-        body = "You are required to reply to this email in a casual manner. Don't answer like a bot. U are only to do what i say and not talk to me. Do only your job . Remember your reply must only be the body of an email"
+        body = "You are required to reply to this email in a casual manner. Don't answer like a bot. U are only to do what i say and not talk to me. Do only your job . Remember your reply must only be ONLY THE BODY of an email"
         return await self.query_llm(prompt,body)
 
     async def query_llm(self, question: str, context: str) -> str:

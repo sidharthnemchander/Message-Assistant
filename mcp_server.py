@@ -46,5 +46,11 @@ async def get_telegram_messages():
     serialized = json.dumps(msgs)
     return serialized
 
+@mcp.tool()
+async def send_telegram_messages(to: str, body: str):
+    result = await telegram_bot.send_message(to, body)
+    return result
+
 if __name__ == "__main__":
+    print("Starting the server")
     mcp.run()

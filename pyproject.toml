@@ -10,5 +10,6 @@ dependencies = [
     "pyrogram>=2.0.106",
     "python-telegram-bot>=22.2",
     "sentence-transformers>=5.0.0",
+    "telethon>=1.40.0",
     "tgcrypto>=1.2.5",
 ]

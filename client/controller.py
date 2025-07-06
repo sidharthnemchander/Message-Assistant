@@ -119,13 +119,30 @@ async def send_emails_through_Groq(session):
     #Calling the send email method
     await session.call_tool("send_emails", {"subject" : "This is a automated reply from Groq", "to" : send_add, "body" : groq_reply})
 
-async def get_t_messages(session):
+async def get_t_messages():
     """Fetch and display Telegram messages using direct connection test."""
-    try:
-        data = await test_direct()
-        for chat_id , messages in data.items():
-            state.id_message[chat_id] = messages
-    except Exception as e:
-        print(f"Controller: direct_telegram_test failed: {e}")
-        import traceback; traceback.print_exc()
-    print(state.id_message)
+    data = await test_direct()
+    for chat_name , messages in data.items():
+        state.name_message[chat_name] = messages
+        state.t_names.append(chat_name)
+    print(state.name_message)
+
+async def send_t_messages(session):
+    """Sending msgs to instagram with usernames"""
+    print("Enter the User Name you want to send the message to (Enter 'titles' to see UserNames): ")
+    user_input = input().strip()
+    
+    if user_input == "titles":
+        if state.t_names:
+            print("Available usernames:")
+            for i, name in enumerate(state.t_names, 1):
+                print(f"{i}. {name}")
+        else:
+            print("No usernames available. Please sync Telegram messages first (Option 6).")
+            return None
+        user_input = input("Enter the username: ").strip()
+
+    body = input("Enter the message : ").strip()
+
+    result = await session.call_tool("send_telegram_messages", {"to": user_input, "body": body})
+    return result

@@ -7,4 +7,5 @@ bodys = []
 sub_ind_to_body = {}
 unreads = []
 num_cat = {}
-id_message = {}
+name_message = {}
+t_names = []
