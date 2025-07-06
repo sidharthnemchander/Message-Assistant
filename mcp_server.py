@@ -3,65 +3,48 @@ from agents.email_agent import EmailAgent
 from agents.classifier_agent import ClassifierAgent
 from agents.LLMchatbot import LLMChatBot
 from agents.telegram_agent import TelegramAgent
+import json
 
 # Create FastMCP server
-mcp = FastMCP("Email Assistant Server")
+titlestr = "Email & Telegram Assistant Server"
+mcp = FastMCP(titlestr)
 
-# Initialize the email agent
+# Initialize agents
 email_agent = EmailAgent()
 classifier_agent = ClassifierAgent()
 bot = LLMChatBot()
-telegram_agent = TelegramAgent()
+telegram_bot = TelegramAgent()
+
 
 @mcp.tool()
 async def get_latest_emails():
-    """Fetch the latest emails from the inbox"""
-    print("The mcp_server.py is running")
     return await email_agent.fetch_latest_emails()
 
 @mcp.tool()
 async def handle_email_task(task: str) -> dict:
-    """Handle various email-related tasks"""
     return await email_agent.handle_task(task)
 
 @mcp.tool()
 async def classify_subject(subject: str) -> str:
-    print("The mcp_server.py is running")
-    category = classifier_agent.classify_subject(subject)
-    return str(category)
+    return classifier_agent.classify_subject(subject)
 
 @mcp.tool()
-async def summarize(body : str) -> str:
-    """Summarize the content through Groq"""
-    summarize_content = await bot.summarize(body)
-    return str(summarize_content)
+async def summarize(body: str) -> str:
+    return await bot.summarize(body)
 
 @mcp.tool()
-async def send_emails(subject : str, to : str, body : str):
-    """Sending an email through send_emails.py"""
-    return await email_agent.send_emails(subject,to,body)
+async def send_emails(subject: str, to: str, body: str):
+    return await email_agent.send_emails(subject, to, body)
 
 @mcp.tool()
-async def send_mail_by_Groq(prompt : str) -> str:
-    """Sending the prompt to the Groq's Chat Model"""
-    groq_ans = await bot.send_email_by_bot(prompt)
-    return groq_ans
+async def send_mail_by_Groq(prompt: str) -> str:
+    return await bot.send_email_by_bot(prompt)
 
 @mcp.tool()
 async def get_telegram_messages():
-    """Fetching the messages from telegram"""
-    print("MCP Server: get_telegram_messages called")
-    try:
-        result = await telegram_agent.fetch_messages()
-        print(f"MCP Server: Telegram agent returned: {result}")
-        return result
-    except Exception as e:
-        print(f"MCP Server: Error in get_telegram_messages: {e}")
-        import traceback
-        traceback.print_exc()
-        return {}
+    msgs = await telegram_bot.fetch_messages()
+    serialized = json.dumps(msgs)
+    return serialized
 
 if __name__ == "__main__":
-    # Run the server
-    print("Starting the server")
     mcp.run()

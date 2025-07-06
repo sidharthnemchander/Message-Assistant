@@ -1,6 +1,7 @@
 from . import state
 import json
 from email.utils import parseaddr
+from direct_telegram_test import test_direct
 
 async def get_emails(session):
 
@@ -119,16 +120,15 @@ async def send_emails_through_Groq(session):
     await session.call_tool("send_emails", {"subject" : "This is a automated reply from groq", "to" : send_add, "body" : groq_reply})
 
 async def get_t_messages(session):
-    print("Fetching Telegram messages...")
-    messages = await session.call_tool("get_telegram_messages")
-    print(f"Raw result: {messages}")
-    
-    # Check if messages is empty
-    if not messages or str(messages.content[0].text) == '{}':
-        print("No messages found. This could mean:")
-        print("1. The chats have no text messages (only images/stickers)")
-        print("2. All messages are too old")
-        print("3. There's an issue with message fetching")
-    else:
-        print("Messages found:")
-        print(messages.content[0].text)
+    """Fetch and display Telegram messages using direct connection test."""
+    print("Controller: Using direct Telegram connection via direct_telegram_test...")
+    try:
+        data = await test_direct()
+        for chat_id , messages in data.items():
+            print(f"chat id {chat_id} : messages {messages}")
+            for i , msgs in enumerate(messages):
+                print(f"  Message {i+1}: {msgs[:50]}...")
+    except Exception as e:
+        print(f"Controller: direct_telegram_test failed: {e}")
+        import traceback; traceback.print_exc()
+    return
