@@ -125,10 +125,7 @@ async def get_t_messages(session):
     try:
         data = await test_direct()
         for chat_id , messages in data.items():
-            print(f"chat id {chat_id} : messages {messages}")
-            for i , msgs in enumerate(messages):
-                print(f"  Message {i+1}: {msgs[:50]}...")
+            state.id_message[chat_id] = messages
     except Exception as e:
         print(f"Controller: direct_telegram_test failed: {e}")
         import traceback; traceback.print_exc()
-    return
