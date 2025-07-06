@@ -9,7 +9,6 @@ class TelegramBotServer:
         self.messages_by_chat = defaultdict(list)
 
     async def fetch_messages(self):
-    
         async with self.app:
             dialog_gen = self.app.get_dialogs()
             chat_count = 0
@@ -20,6 +19,7 @@ class TelegramBotServer:
                     break
 
                 chat_id = dialog.chat.id
+                chat_name = dialog.chat.title
                 messages = []
                 history_gen = self.app.get_chat_history(chat_id, limit=3)
                 msg_count = 0
@@ -27,7 +27,7 @@ class TelegramBotServer:
                     if msg.text:
                         messages.append(msg.text)
                         msg_count += 1
-                self.messages_by_chat[chat_id] = list(reversed(messages))
+                self.messages_by_chat[chat_name] = list(reversed(messages))
 
                 chat_count += 1
         result = self.messages_by_chat

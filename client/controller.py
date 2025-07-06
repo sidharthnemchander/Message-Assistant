@@ -117,11 +117,10 @@ async def send_emails_through_Groq(session):
     groq_reply = obj.content[0].text
 
     #Calling the send email method
-    await session.call_tool("send_emails", {"subject" : "This is a automated reply from groq", "to" : send_add, "body" : groq_reply})
+    await session.call_tool("send_emails", {"subject" : "This is a automated reply from Groq", "to" : send_add, "body" : groq_reply})
 
 async def get_t_messages(session):
     """Fetch and display Telegram messages using direct connection test."""
-    print("Controller: Using direct Telegram connection via direct_telegram_test...")
     try:
         data = await test_direct()
         for chat_id , messages in data.items():
@@ -129,3 +128,4 @@ async def get_t_messages(session):
     except Exception as e:
         print(f"Controller: direct_telegram_test failed: {e}")
         import traceback; traceback.print_exc()
+    print(state.id_message)
