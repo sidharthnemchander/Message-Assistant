@@ -9,7 +9,8 @@ def show_menu():
     print("5. Send Emails with Bot")
     print("6. Sync Telegram messages")
     print("7. Send Telegram messages")
-    print("8. Exit")
+    print("8. Send Telegram message by Groq")
+    print("9. Exit")
 
 async def handle_choice(choice: str, session):
     if choice == "1":
@@ -25,9 +26,10 @@ async def handle_choice(choice: str, session):
     elif choice == "6":
         await controller.get_t_messages()
     elif choice == '7':
-        print("menu working")
         await controller.send_t_messages(session)
-    elif choice == "8":
+    elif choice == '8':
+        await controller.send_message_groq(session)
+    elif choice == "9":
         print("Exiting...")
         return False
     else:

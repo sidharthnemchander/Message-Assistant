@@ -51,6 +51,10 @@ async def send_telegram_messages(to: str, body: str):
     result = await telegram_bot.send_message(to, body)
     return result
 
+@mcp.tool()
+async def message_groq(prompt : str) -> str:
+    result = await bot.send_message(prompt)
+    return result
 if __name__ == "__main__":
     print("Starting the server")
     mcp.run()

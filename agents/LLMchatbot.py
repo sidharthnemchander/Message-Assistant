@@ -21,6 +21,10 @@ class LLMChatBot:
         body = "You are required to reply to this email in a casual manner. Don't answer like a bot. U are only to do what i say and not talk to me. Do only your job . Remember your reply must only be ONLY THE BODY of an email"
         return await self.query_llm(prompt,body)
 
+    async def send_message(self,prompt : str) -> str:
+        body = "You are required to reply to a message in telegram. Keep the answer very casual and simple. Don't answer like a bot"
+        return await self.query_llm(prompt,body)
+    
     async def query_llm(self, question: str, context: str) -> str:
         headers = {
             "Authorization": f"Bearer {self.groq_api_key}",
@@ -29,7 +33,7 @@ class LLMChatBot:
         payload = {
             "model": self.groq_model,
             "messages": [
-                {"role": "system", "content": "You are the world's best assistant for performing any operations in emails. You are the MOST EXPERIENCED PERSON in this domain. DO AS THE JOB REQUIRES"},
+                {"role": "system", "content": "You are the world's best assistant for performing any operations in emails and Telegram . You are the MOST EXPERIENCED PERSON in this domain. DO AS THE JOB REQUIRES"},
                 {"role": "user", "content": f"Context:\n{context}\n\nQuestion:\n{question}"}
             ],
             "max_tokens": 1000,

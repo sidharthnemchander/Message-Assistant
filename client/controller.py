@@ -146,3 +146,22 @@ async def send_t_messages(session):
 
     result = await session.call_tool("send_telegram_messages", {"to": user_input, "body": body})
     return result
+
+async def send_message_groq(session):
+    print("Enter the User Name you want to send the message to (Enter 'titles' to see UserNames): ")
+    user_input = input().strip()
+    
+    if user_input == "titles":
+        if state.t_names:
+            print("Available usernames:")
+            for i, name in enumerate(state.t_names, 1):
+                print(f"{i}. {name}")
+        else:
+            print("No usernames available. Please sync Telegram messages first (Option 6).")
+            return None
+        user_input = input("Enter the username: ").strip()
+    
+    prompt = input("Hi , How should i draft your message : ").strip()
+    body = await session.call_tool("message_groq", {"prompt": prompt})
+    body_text = body.content[0].text
+    await session.call_tool("send_telegram_messages", {"to": user_input, "body": body_text})
