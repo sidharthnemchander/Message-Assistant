@@ -83,6 +83,7 @@ async def view_by_category(session):
         return
 
 async def send_emails(session):
+    """Sending msgs using IMAP protocol"""
     print("Enter the email address you want to send it to : (press 'froms' to check the from addresses)")
     u_inp = input().strip()
     if(u_inp == 'froms'):
@@ -129,9 +130,11 @@ async def get_t_messages():
 
 async def send_t_messages(session):
     """Sending msgs to instagram with usernames"""
+
     print("Enter the User Name you want to send the message to (Enter 'titles' to see UserNames): ")
     user_input = input().strip()
     
+    #Diplaying the titles from the msgs i have got
     if user_input == "titles":
         if state.t_names:
             print("Available usernames:")
@@ -148,9 +151,12 @@ async def send_t_messages(session):
     return result
 
 async def send_message_groq(session):
+    """Replying to msgs using Groq"""
+
     print("Enter the User Name you want to send the message to (Enter 'titles' to see UserNames): ")
     user_input = input().strip()
     
+    #Diplaying the titles from the msgs i have got
     if user_input == "titles":
         if state.t_names:
             print("Available usernames:")
@@ -162,6 +168,8 @@ async def send_message_groq(session):
         user_input = input("Enter the username: ").strip()
     
     prompt = input("Hi , How should i draft your message : ").strip()
+    #Getting the text to send from groq
     body = await session.call_tool("message_groq", {"prompt": prompt})
     body_text = body.content[0].text
+    #Calling the send msg tool
     await session.call_tool("send_telegram_messages", {"to": user_input, "body": body_text})
