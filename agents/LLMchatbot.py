@@ -25,6 +25,15 @@ class LLMChatBot:
         body = "You are required to reply to a message in telegram. Keep the answer very casual and simple. Don't answer like a bot"
         return await self.query_llm(prompt,body)
     
+    async def query_with_email_context(self, prompt: str, email_context: dict ) -> str:
+        """Query LLM with email context from state"""
+        context_info = ""
+        if email_context:
+            context_info = f"\nCurrent Email Context:\n{email_context}\n"
+        
+        body = f"You have access to the user's email data. Use this context to provide helpful responses.{context_info}"
+        return await self.query_llm(prompt, body)
+        
     async def query_llm(self, question: str, context: str) -> str:
         headers = {
             "Authorization": f"Bearer {self.groq_api_key}",

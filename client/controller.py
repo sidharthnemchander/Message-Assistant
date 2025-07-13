@@ -21,6 +21,7 @@ async def get_emails(session):
             state.unreads.append(email_obj["subject"])
 
     print("No of emails fetched",length )
+    print(state.emails)
 
 
 async def categorize_emails(session):
@@ -173,3 +174,63 @@ async def send_message_groq(session):
     body_text = body.content[0].text
     #Calling the send msg tool
     await session.call_tool("send_telegram_messages", {"to": user_input, "body": body_text})
+
+async def ask_ai_about_emails(session):
+    """Ask AI questions about your emails with full context"""
+    if not state.subjects:
+        print("Please fetch emails first (Option 1).")
+        return
+    
+    print(f"\nYou have {len(state.subjects)} emails loaded.")
+    if state.categorized_emails:
+        print(f"Categories: {', '.join(state.categorized_emails.keys())}")
+    if state.unreads:
+        print(f"Unread emails: {len(state.unreads)}")
+    
+    print("\nAsk me anything about your emails:")
+    question = input("Your question: ").strip()
+    
+    if not question:
+        print("No question provided.")
+        return
+    
+    try:
+        result = await session.call_tool("ask_about_emails", {"question": question})
+        print("\nAI Response:")
+        print(result.content[0].text)
+    except Exception as e:
+        print(f"Error: {e}")
+
+async def show_email_state(session):
+    """Show current email state summary"""
+    try:
+        result = await session.call_tool("query_email_state", {"query_type": "all"})
+        data = result.content[0].text
+        
+        print("\n=== EMAIL STATE SUMMARY ===")
+        print(data)
+        
+        # Also show specific queries
+        print("\nWhat would you like to see?")
+        print("1. Just subjects")
+        print("2. Just categories") 
+        print("3. Just unread emails")
+        print("4. Just senders")
+        print("5. Back to main menu")
+        
+        choice = input("Enter choice: ").strip()
+        
+        query_map = {
+            "1": "subjects",
+            "2": "categories", 
+            "3": "unread",
+            "4": "senders"
+        }
+        
+        if choice in query_map:
+            result = await session.call_tool("query_email_state", {"query_type": query_map[choice]})
+            print(f"\n=== {query_map[choice].upper()} ===")
+            print(result.content[0].text)
+            
+    except Exception as e:
+        print(f"Error getting email state: {e}")

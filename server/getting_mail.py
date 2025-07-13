@@ -35,7 +35,7 @@ class EmailFetchAgent:
     def connect(self) -> None:
         self.connection = imaplib.IMAP4_SSL(self.imap_server)
         self.connection.login(self.email_address, self.app_password)
-        self.connection.select('"[Gmail]/All Mail"')
+        self.connection.select('inbox')
 
     def fetch_latest_emails(self) -> List[Dict[str, str]]:
         assert self.connection is not None, "IMAP connection not established"
@@ -46,7 +46,7 @@ class EmailFetchAgent:
         all_id_list = all_ids[0].split()
         unread_id_list = set(unread_ids[0].split())
 
-        latest_ids = all_id_list[25:65]
+        latest_ids = all_id_list[-40:]
 
         results = []
 
