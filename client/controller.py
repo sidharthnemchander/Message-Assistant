@@ -11,6 +11,8 @@ async def get_emails(session):
     data = json.loads(that_damn_object)
     email_data = data["emails"]
     length = 0
+
+
     for email_obj in email_data:
         length +=1
         state.froms.append(email_obj["from"])
@@ -20,16 +22,15 @@ async def get_emails(session):
         if email_obj["unread"] == "true" :
             state.unreads.append(email_obj["subject"])
 
-    print("No of emails fetched",length )
-    print(state.emails)
+    print(f"No of emails fetched: {length}")
+
 
 
 async def categorize_emails(session):
     if not state.subjects:
         print("Please fetch emails first (Option 1).")
         return
-
-    state.categorized_emails = {}
+    
 
     for sub in state.subjects:
         result = await session.call_tool("classify_subject", {"subject": sub})
@@ -42,7 +43,16 @@ async def categorize_emails(session):
             category = "Others"
             
         state.categorized_emails.setdefault(category, []).append(sub)
-    print("Emails categorized.")
+    
+    result = await session.call_tool("categorize_all_emails")
+    response = json.loads(result.content[0].text)
+    
+    print("Emails categorized successfully!")
+    print("Categories found:")
+    for category, count in response["categories"].items():
+        print(f"  - {category}: {count} emails")
+    
+    # state.categorized_emails = response.get("detailed_categories", {})
 
 async def view_by_category(session):
     if not state.categorized_emails:
@@ -175,64 +185,24 @@ async def send_message_groq(session):
     #Calling the send msg tool
     await session.call_tool("send_telegram_messages", {"to": user_input, "body": body_text})
 
-async def show_email_state(session):
-    """Show current email state summary"""
-    try:
-        # Pass the current state as parameters
-        state_data = {
-            "subjects": state.subjects,
-            "categories": state.categorized_emails,
-            "unread": state.unreads,
-            "senders": state.froms,
-            "total_emails": len(state.subjects)
-        }
-        
-        result = await session.call_tool("query_email_state_with_data", {"state_data": state_data, "query_type": "all"})
-        data = result.content[0].text
-        
-        print("\n=== EMAIL STATE SUMMARY ===")
-        print(data)
-        
-        # Rest of your existing code...
-        
-    except Exception as e:
-        print(f"Error getting email state: {e}")
-
-async def ask_ai_about_emails(session):
-    """Ask AI questions about your emails with full context"""
-    if not state.subjects:
-        print("Please fetch emails first (Option 1).")
-        return
+async def chat_with_ai_about_data(session):
+    """New option to chat with AI about your data using MCP resources"""
+    print("=== Chat with AI about your Email & Telegram Data ===")
+    print("The AI has access to all your email and telegram data through MCP resources.")
+    print("Ask any questions about your emails, categories, unread messages, etc.")
+    print("Type 'quit' to exit.\n")
     
-    print(f"\nYou have {len(state.subjects)} emails loaded.")
-    if state.categorized_emails:
-        print(f"Categories: {', '.join(state.categorized_emails.keys())}")
-    if state.unreads:
-        print(f"Unread emails: {len(state.unreads)}")
-    
-    print("\nAsk me anything about your emails:")
-    question = input("Your question: ").strip()
-    
-    if not question:
-        print("No question provided.")
-        return
-    
-    try:
-        # Pass current state as parameter
-        email_context = {
-            "subjects": state.subjects,
-            "categories": state.categorized_emails,
-            "unread": state.unreads,
-            "senders": state.froms,
-            "content": state.subjects_to_body,
-            "total_emails": len(state.subjects)
-        }
+    while True:
+        question = input("Your question: ").strip()
+        if question.lower() == 'quit':
+            break
         
-        result = await session.call_tool("ask_about_emails_with_context", {
-            "question": question,
-            "email_context": email_context
-        })
-        print("\nAI Response:")
-        print(result.content[0].text)
-    except Exception as e:
-        print(f"Error: {e}")
+        if not question:
+            continue
+        
+        try:
+            response = await session.call_tool("chat_about_data", {"question": question})
+            answer = response.content[0].text
+            print(f"\nAI: {answer}\n")
+        except Exception as e:
+            print(f"Error: {e}\n")

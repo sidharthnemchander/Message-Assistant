@@ -3,15 +3,15 @@ from . import controller
 def show_menu():
     print("\nOptions:")
     print("1. Get Emails")
-    print("2. Get Categories")
+    print("2. Get Categories") 
     print("3. View Emails by Category")
     print("4. Send Emails")
     print("5. Send Emails with Bot")
     print("6. Sync Telegram messages")
     print("7. Send Telegram messages")
     print("8. Send Telegram message by Groq")
-    print("9. Ask AI (classic Chatbot)")
-    print("10. Full Mail Summary")
+    print("9. Chat with AI about your data")  # New option
+    print("10. List available MCP resources")  # New option
     print("11. Exit")
 
 async def handle_choice(choice: str, session):
@@ -32,9 +32,12 @@ async def handle_choice(choice: str, session):
     elif choice == '8':
         await controller.send_message_groq(session)
     elif choice == '9':
-        await controller.ask_ai_about_emails(session)
+        await controller.chat_with_ai_about_data(session)
     elif choice == '10':
-        await controller.show_email_state(session)
+        # List available resources
+        result = await session.call_tool("list_available_resources")
+        print("\n=== Available MCP Resources ===")
+        print(result.content[0].text)
     elif choice == "11":
         print("Exiting...")
         return False
