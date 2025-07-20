@@ -3,7 +3,7 @@ from . import controller
 def show_menu():
     print("\nOptions:")
     print("1. Get Emails")
-    print("2. Get Categories") 
+    print("2. Get Categories")
     print("3. View Emails by Category")
     print("4. Send Emails")
     print("5. Send Emails with Bot")

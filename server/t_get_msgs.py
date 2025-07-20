@@ -14,12 +14,12 @@ class TelegramBotServer:
             chat_count = 0
             
             async for dialog in dialog_gen: # type: ignore (This show a coroutine type error but its working tho)
-                if chat_count >= 3:
+                if chat_count >= 5:
                     print("TelegramBotServer: Reached limit of 3 chats")
                     break
-
+                
                 chat_id = dialog.chat.id
-                chat_name = dialog.chat.title
+                chat_name = dialog.chat.first_name
                 messages = []
                 history_gen = self.app.get_chat_history(chat_id, limit=3)
                 msg_count = 0

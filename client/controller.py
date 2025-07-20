@@ -137,7 +137,13 @@ async def get_t_messages():
     for chat_name , messages in data.items():
         state.name_message[chat_name] = messages
         state.t_names.append(chat_name)
-    print(state.name_message)
+        if(chat_name == "None") :
+            continue
+        print("CHAT NAME : ",chat_name)
+        for i in range(len(messages)):
+            print(i+1," ", messages[i])
+
+
 
 async def send_t_messages(session):
     """Sending msgs to instagram with usernames"""
