@@ -303,7 +303,7 @@ functions = [
     }
   }
 ]
-
+ 
 
 @mcp.tool()
 async def chat_about_data(question: str) -> str:

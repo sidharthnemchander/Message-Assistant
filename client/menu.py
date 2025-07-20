@@ -10,8 +10,8 @@ def show_menu():
     print("6. Sync Telegram messages")
     print("7. Send Telegram messages")
     print("8. Send Telegram message by Groq")
-    print("9. Chat with AI about your data")  # New option
-    print("10. List available MCP resources")  # New option
+    print("9. Chat with AI about your data")
+    print("10. List available MCP resources")
     print("11. Exit")
 
 async def handle_choice(choice: str, session):

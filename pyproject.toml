@@ -5,12 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiohttp>=3.12.14",
     "beautifulsoup4>=4.13.4",
     "imapclient>=3.0.1",
     "mcp[cli]>=1.10.1",
     "pyrogram>=2.0.106",
     "python-telegram-bot>=22.2",
     "sentence-transformers>=5.0.0",
+    "streamlit>=1.47.0",
     "telethon>=1.40.0",
     "tgcrypto>=1.2.5",
 ]
