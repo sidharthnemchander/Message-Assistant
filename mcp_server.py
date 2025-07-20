@@ -304,13 +304,6 @@ functions = [
   }
 ]
 
-async def _dispatch_function(name: str, args: dict) -> str:
-    if name == "get_email_resource":
-        return (await get_email_resource(args["uri"]))["text"]
-    if name == "get_telegram_resource":
-        return (await get_telegram_resource(args["uri"]))["text"]
-    raise RuntimeError(f"No such function: {name}")
-
 
 @mcp.tool()
 async def chat_about_data(question: str) -> str:
@@ -355,7 +348,7 @@ async def chat_about_data(question: str) -> str:
                         continue
     
     # Include telegram data if question mentions telegram/chat
-    if server_state.t_names and ("telegram" in question_lower or "chat" in question_lower or "message" in question_lower):
+    if server_state.t_names:
         telegram_summary = await get_telegram_resource("telegram://summary")
         data_context += f"TELEGRAM SUMMARY:\n{telegram_summary['text']}\n\n"
     
