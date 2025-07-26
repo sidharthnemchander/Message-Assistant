@@ -278,7 +278,7 @@ async def categorize_all_emails() -> str:
     
     return json.dumps({
         "message": "Emails categorized successfully",
-        "categories": {cat: len(subjects) for cat, subjects in categorized.items()}
+        "categories": categorized
     }, indent=2)
 
 #  ── Function definitions for ChatCompletion ──
