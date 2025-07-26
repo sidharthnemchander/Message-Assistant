@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Email and Telegram DM Unify</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        background-color: #f4f4f9;
+      }
+      .container {
+        max-width: 1000px;
+        margin: auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      button {
+        padding: 10px 20px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .info-box {
+        margin-top: 20px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        border: 1px solid #e3e3e3;
+        min-height: 50px;
+      }
+      .list-item {
+        padding: 8px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+      }
+      .list-item:hover {
+        background-color: #e9ecef;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Email and Telegram Assistant</h1>
+      <button onclick="getMails()">1. Get Emails</button>
+      <button onclick="getAndRenderCategories()">
+        2. Get & View Categories
+      </button>
+
+      <div id="InteractiveView" class="info-box">
+        Get emails, then get & view categories to start the interactive view.
+      </div>
+    </div>
+
+    <script>
+      const interactiveDiv = document.getElementById("InteractiveView");
+
+      let clientState = {
+        subjectsToBody: {},
+        categorizedEmails: {},
+      };
+
+      async function getMails() {
+        interactiveDiv.textContent = "Loading emails...";
+        try {
+          const response = await fetch("/getMail", { method: "POST" });
+          const res = await response.json();
+          if (!response.ok) throw new Error(res.detail);
+          clientState.subjectsToBody = res.subjects_to_body || {};
+          interactiveDiv.textContent = res.message;
+        } catch (error) {
+          interactiveDiv.textContent = "Error: " + error.message;
+        }
+      }
+
+      async function getAndRenderCategories() {
+        interactiveDiv.textContent = "Categorizing emails...";
+        try {
+          const response = await fetch("/GetCategories", { method: "POST" });
+          const res = await response.json();
+
+          // --- Start of Changes ---
+
+          // 1. Add logging to see what the server is actually sending
+          console.log("Data received from /GetCategories endpoint:", res);
+
+          if (!response.ok) throw new Error(res.detail);
+
+          // 2. Make data extraction more robust to find the categories object
+          const categories = res.categorized_emails || {};
+          clientState.categorizedEmails = categories;
+
+          console.log(
+            "Saved categories to client state:",
+            clientState.categorizedEmails
+          );
+
+          // --- End of Changes ---
+
+          renderCategoryList();
+        } catch (error) {
+          console.error("Error in getAndRenderCategories:", error);
+          interactiveDiv.textContent = "ERROR: " + error.message;
+        }
+      }
+
+      // --- NEW: Robust DOM manipulation functions ---
+
+      function renderCategoryList() {
+        interactiveDiv.innerHTML = ""; // Clear the view
+        const title = document.createElement("h3");
+        title.textContent = "Click a Category to View Subjects:";
+        interactiveDiv.appendChild(title);
+
+        if (Object.keys(clientState.categorizedEmails).length === 0) {
+          const p = document.createElement("p");
+          p.textContent = "No categories found.";
+          interactiveDiv.appendChild(p);
+          return;
+        }
+
+        // This loop now assumes the server is sending the full list of subjects
+        for (const category in clientState.categorizedEmails) {
+          const subjects = clientState.categorizedEmails[category];
+
+          // Add a check to ensure the data is a list before proceeding
+          if (!Array.isArray(subjects)) {
+            console.error(
+              "Data for category '" + category + "' is not a list. Skipping."
+            );
+            continue;
+          }
+
+          const listItem = document.createElement("div");
+          listItem.className = "list-item";
+          // Calculate the count from the length of the list
+          listItem.textContent = category + " (" + subjects.length + " emails)";
+          // Add the click event listener to call the next function
+          listItem.addEventListener("click", () => renderSubjectList(category));
+          interactiveDiv.appendChild(listItem);
+        }
+      }
+
+      function renderSubjectList(categoryName) {
+        const subjects = clientState.categorizedEmails[categoryName];
+        interactiveDiv.innerHTML = ""; // Clear the view
+        const title = document.createElement("h3");
+        title.textContent = "Subjects in " + categoryName + ":";
+        interactiveDiv.appendChild(title);
+
+        if (!Array.isArray(subjects)) {
+          interactiveDiv.innerHTML +=
+            "<p>Error: Subject list is not valid.</p>";
+          return;
+        }
+
+        subjects.forEach((subject, index) => {
+          const listItem = document.createElement("div");
+          listItem.className = "list-item";
+          listItem.textContent = index + 1 + ". " + subject;
+          listItem.addEventListener("click", () => renderEmailView(subject));
+          interactiveDiv.appendChild(listItem);
+        });
+      }
+
+      function renderEmailView(subject) {
+        const body = clientState.subjectsToBody[subject];
+        interactiveDiv.innerHTML = ""; // Clear view
+
+        const subjectHeader = document.createElement("h3");
+        subjectHeader.textContent = subject;
+
+        const summarizeBtn = document.createElement("button");
+        summarizeBtn.textContent = "Summarize with AI";
+        summarizeBtn.addEventListener("click", () => summarizeEmail(subject));
+
+        const hr = document.createElement("hr");
+
+        const bodyDiv = document.createElement("div");
+        bodyDiv.style.whiteSpace = "pre-wrap";
+        bodyDiv.textContent = body || "Body not found.";
+
+        interactiveDiv.appendChild(subjectHeader);
+        interactiveDiv.appendChild(summarizeBtn);
+        interactiveDiv.appendChild(hr);
+        interactiveDiv.appendChild(bodyDiv);
+      }
+
+      async function summarizeEmail(subject) {
+        interactiveDiv.innerHTML = "<h3>Summarizing...</h3>";
+        try {
+          const response = await fetch("/summarizeEmail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subject: subject }),
+          });
+          const res = await response.json();
+          if (!response.ok) throw new Error(res.detail);
+
+          interactiveDiv.innerHTML = ""; // Clear view
+
+          const summaryHeader = document.createElement("h3");
+          summaryHeader.textContent = "Summary for: " + subject;
+
+          const summaryDiv = document.createElement("div");
+          summaryDiv.style.whiteSpace = "pre-wrap";
+          summaryDiv.style.backgroundColor = "#eef";
+          summaryDiv.style.padding = "10px";
+          summaryDiv.style.borderRadius = "5px";
+          summaryDiv.textContent = res.summary;
+
+          const hr = document.createElement("hr");
+
+          const backBtn = document.createElement("button");
+          backBtn.textContent = "Back to Categories";
+          backBtn.addEventListener("click", renderCategoryList);
+
+          interactiveDiv.appendChild(summaryHeader);
+          interactiveDiv.appendChild(summaryDiv);
+          interactiveDiv.appendChild(hr);
+          interactiveDiv.appendChild(backBtn);
+        } catch (error) {
+          interactiveDiv.innerHTML =
+            "<h3>ERROR</h3><p>" + error.message + "</p>";
+        }
+      }
+    </script>
+  </body>
+</html>
