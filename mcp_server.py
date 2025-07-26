@@ -232,7 +232,17 @@ async def classify_subject(subject: str) -> str:
 
 @mcp.tool()
 async def summarize(body: str) -> str:
-    return await bot.summarize(body)
+    try:
+        # This is the line that is likely failing.
+        summary_text = await bot.summarize(body[0:100])
+        return summary_text
+    except Exception as e:
+        # Instead of crashing, we catch the error from the agent.
+        print(f"--- ERROR IN SUMMARIZE TOOL ---")
+        print(f"An exception occurred in the LLMChatBot agent: {e}")
+        print(f"--- END OF ERROR ---")
+        # And return a helpful error message to the user.
+        return f"The summarizer agent failed. Please check the mcp_server console for details. Error: {e}"
 
 @mcp.tool()
 async def send_emails(subject: str, to: str, body: str):

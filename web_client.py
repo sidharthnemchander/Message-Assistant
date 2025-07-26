@@ -24,7 +24,14 @@ async def call_mcp_server(tool_name: str, params=None):
         async with streamablehttp_client(MCP_SERVER_URL) as (read, write, _):
             async with ClientSession(read, write) as session:
                 await session.initialize()
-                result = await session.call_tool(tool_name, **(params or {}))
+                if params != None:
+                    print(params)
+                    if tool_name == "summarize" and "body" in params:
+                        print("Try to call summarize tool")
+                        print(params['body'])
+                        result = await session.call_tool(tool_name,{"body": params["body"]})
+                else:
+                    result = await session.call_tool(tool_name, **(params or {}))
                 
                 if result.content and isinstance(result.content[0], TextContent):
                     return result.content[0].text
