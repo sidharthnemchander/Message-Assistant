@@ -4,6 +4,7 @@ from agents.classifier_agent import ClassifierAgent
 from agents.LLMchatbot import LLMChatBot
 from agents.telegram_agent import TelegramAgent
 import json
+import uvicorn
 
 # Create FastMCP server
 titlestr = "Email & Telegram Assistant Server"
@@ -189,7 +190,6 @@ async def get_telegram_resource(uri: str):
         "text": "No telegram data available. Please sync messages first."
     }
 
-# List all available resources
 @mcp.tool()
 async def list_available_resources() -> str:
     """List all currently available resources"""
@@ -225,7 +225,10 @@ async def handle_email_task(task: str) -> dict:
 
 @mcp.tool()
 async def classify_subject(subject: str) -> str:
-    return classifier_agent.classify_subject(subject)
+    try:
+        return classifier_agent.classify_subject(subject)
+    except Exception as e:
+        return f"agent failed for the subject {subject} : {e}"
 
 @mcp.tool()
 async def summarize(body: str) -> str:
@@ -368,6 +371,9 @@ async def chat_about_data(question: str) -> str:
     
     return await bot.query_llm(question, system_prompt)
 
+app = mcp.streamable_http_app
+
 if __name__ == "__main__":
-    print("Starting the server")
-    mcp.run()
+    print("Starting MCP server on http://127.0.0.1:8001")
+    uvicorn.run(app, host="127.0.0.1", port=8001)
+    #completed
