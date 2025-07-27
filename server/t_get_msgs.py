@@ -36,7 +36,7 @@ class TelegramBotServer:
         
         latest_messages = defaultdict(list)
 
-        async for dialog in dialog_gen:
+        async for dialog in dialog_gen: # type: ignore (This show a coroutine type error but its working tho)
             if chat_count >= 5:
                 break
             
@@ -45,7 +45,7 @@ class TelegramBotServer:
             messages = []
             history_gen = self.app.get_chat_history(chat_id, limit=3)
 
-            async for msg in history_gen:
+            async for msg in history_gen: # type: ignore (This show a coroutine type error but its working tho)
                 if msg.text:
                     messages.append(msg.text)
             
