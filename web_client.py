@@ -11,12 +11,14 @@ from client import state
 
 app = FastAPI(title="Email and Telegram Assistant")
 
-# Ensure the URL ends with a slash to avoid redirects
 MCP_SERVER_URL = "http://127.0.0.1:8001/mcp/"
 
 # --- Pydantic Models for request validation ---
 class SubjectRequest(BaseModel):
     subject: str
+
+class ChatRequest(BaseModel):
+    question: str
 
 class SendEmailRequest(BaseModel):
     to: str
@@ -48,6 +50,10 @@ async def call_mcp_server(tool_name: str, params=None):
                         result = await session.call_tool(tool_name,{"to": params.to, "body": params.body})
                     elif tool_name == "message_groq" and isinstance(params,GroqRequest):
                         result = await session.call_tool(tool_name,{"prompt": params.prompt})
+                    elif tool_name == "chat_about_data" and isinstance(params,ChatRequest):
+                        print("THE SERVER IS WORKING")
+                        print("q",params.question)
+                        result = await session.call_tool(tool_name,{"question": params.question})
                 else:
                     result = await session.call_tool(tool_name, **(params or {}))
                 
@@ -98,6 +104,7 @@ async def get_home():
             <button onclick="toggleComposer()">Compose Email</button>
             <button onclick="syncTelegram()">Sync Telegram</button>
             <button onclick="toggleTelegramComposer()" style="background-color: #17a2b8;">Send Telegram</button>
+            <button onclick="toggleAiChat()" style="background-color: #28a745;">Chat with AI</button>
                         
             <div id="InteractiveView" class="info-box">Get emails, then get & view categories to start.</div>
             <div id="TelegramView" class="info-box" style="display:none;"></div>
@@ -156,6 +163,15 @@ async def get_home():
                 </div>
                 <button onclick="sendTelegramMessage()" style="background-color: #17a2b8;">Send Message</button>
             </div>
+            <div id="ai-chat-container">
+                <h3>Chat with AI about your Data</h3>
+                <p>Ask any questions about your emails, categories, unread messages, telegram chats, etc.</p>
+                <div class="form-group">
+                    <input type="text" id="ai-chat-question" placeholder="e.g., 'Do I have any unread emails from marketing?'">
+                </div>
+                <button onclick="askAiAboutData()" style="background-color: #28a745;">Ask AI</button>
+                <div id="ai-chat-response" class="info-box" style="white-space: pre-wrap; margin-top: 15px; min-height: 50px;">Your answer will appear here.</div>
+            </div>        
         </div>
         <script>
           // --- DOM Elements ---
@@ -163,6 +179,8 @@ async def get_home():
           const telegramDiv = document.getElementById("TelegramView");
           const composerDiv = document.getElementById("composer");
           const telegramComposerDiv = document.getElementById("telegram-composer");
+          const aiChatContainer = document.getElementById("ai-chat-container");
+          const aiChatResponseDiv = document.getElementById("ai-chat-response");
           
           let clientState = { subjectsToBody: {}, categorizedEmails: {}, fromAddresses: [],telegramUsernames: [] };
 
@@ -545,6 +563,36 @@ async def get_home():
                   statusDiv.textContent = "Error sending message: " + error.message;
               }
           }
+          function toggleAiChat() {
+              const shouldBeVisible = aiChatContainer.style.display === 'none';
+              aiChatContainer.style.display = shouldBeVisible ? 'block' : 'none';
+          }
+
+          async function askAiAboutData() {
+              const questionInput = document.getElementById('ai-chat-question');
+              const question = questionInput.value;
+
+              if (!question.trim()) {
+                  aiChatResponseDiv.textContent = "Please enter a question.";
+                  return;
+              }
+              aiChatResponseDiv.textContent = "Asking AI...";
+
+              try {
+                  const response = await fetch("/chatAboutData", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ question: question })
+                  });
+                  const res = await response.json();
+                  if (!response.ok) throw new Error(res.detail);
+                  
+                  aiChatResponseDiv.textContent = res.answer;
+                  questionInput.value = ''; // Clear input after asking
+              } catch (error) {
+                  aiChatResponseDiv.textContent = "Error: " + error.message;
+              }
+          }
         </script>
       </body>
     </html>
@@ -628,7 +676,7 @@ async def generate_email_body_endpoint(request: GroqRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- NEW Endpoint for Telegram ---
+
 @app.post("/syncTelegram")
 async def sync_telegram_endpoint():
     """Endpoint to fetch and return Telegram messages."""
@@ -643,7 +691,6 @@ async def sync_telegram_endpoint():
             
         return {"messages": messages}
     except Exception as e:
-        # Catch JSON parsing errors or other exceptions
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/sendTelegramMessage")
@@ -663,6 +710,16 @@ async def generate_telegram_message_endpoint(request: GroqRequest):
         return {"body": body}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/chatAboutData")
+async def chat_about_data_endpoint(request: ChatRequest):
+    """Endpoint to chat with the AI about available data."""
+    try:
+        answer = await call_mcp_server("chat_about_data", params=request)
+        return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     print("Starting web client on http://127.0.0.1:8000")
