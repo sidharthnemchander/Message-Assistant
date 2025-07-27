@@ -35,19 +35,13 @@ async def call_mcp_server(tool_name: str, params=None):
                 await session.initialize()
                 if params != None:
                     if tool_name == "summarize" and "body" in params:
-                        print("Try to call summarize tool")
-                        result = await session.call_tool(tool_name,{"body": params["body"].prompt})
+                        result = await session.call_tool(tool_name,{"body": params["body"]})
                     elif tool_name == "send_emails" and isinstance(params, SendEmailRequest):
-                        print("Trying to call send emails")
                         result = await session.call_tool(tool_name,{"subject" : params.subject, "to" : params.to, "body" : params.body})
                     elif tool_name == "send_mail_by_Groq" and isinstance(params,dict):
-                        print("Trying to call groq body")
-                        print("TYPE pp prompt",type(params['prompt'].prompt))
                         result = await session.call_tool(tool_name,{"prompt": params['prompt'].prompt})
                 else:
-                    print("THIS IS EXECUTING")
                     result = await session.call_tool(tool_name, **(params or {}))
-                    print("result",result)
                 
                 if result.content and isinstance(result.content[0], TextContent):
                     return result.content[0].text
@@ -490,7 +484,7 @@ async def get_from_addresses():
 async def send_email_endpoint(request: SendEmailRequest):
     """Endpoint to send a standard email."""
     try:
-        result = await call_mcp_server("send_emails", params=request.dict())
+        result = await call_mcp_server("send_emails", params=request)
         return {"message": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -499,7 +493,8 @@ async def send_email_endpoint(request: SendEmailRequest):
 async def generate_email_body_endpoint(request: GroqRequest):
     """Endpoint to get help from Groq."""
     try:
-        body = await call_mcp_server("send_mail_by_Groq", params=request.dict())
+        print("TYPE : ", type(request))
+        body = await call_mcp_server("send_mail_by_Groq", params={"prompt": request})
         return {"body": body}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
