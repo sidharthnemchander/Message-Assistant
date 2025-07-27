@@ -37,6 +37,7 @@ async def call_mcp_server(tool_name: str, params=None):
             async with ClientSession(read, write) as session:
                 await session.initialize()
                 if params != None:
+
                     if tool_name == "summarize" and "body" in params:
                         result = await session.call_tool(tool_name,{"body": params["body"]})
                     elif tool_name == "send_emails" and isinstance(params, SendEmailRequest):
@@ -45,7 +46,8 @@ async def call_mcp_server(tool_name: str, params=None):
                         result = await session.call_tool(tool_name,{"prompt": params['prompt'].prompt})
                     elif tool_name == "send_telegram_messages" and isinstance(params,SendTelegramRequest):
                         result = await session.call_tool(tool_name,{"to": params.to, "body": params.body})
-                        print("Result : ", result)
+                    elif tool_name == "message_groq" and isinstance(params,GroqRequest):
+                        result = await session.call_tool(tool_name,{"prompt": params.prompt})
                 else:
                     result = await session.call_tool(tool_name, **(params or {}))
                 
