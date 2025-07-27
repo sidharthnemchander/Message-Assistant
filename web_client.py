@@ -45,7 +45,9 @@ async def call_mcp_server(tool_name: str, params=None):
                         print("TYPE pp prompt",type(params['prompt'].prompt))
                         result = await session.call_tool(tool_name,{"prompt": params['prompt'].prompt})
                 else:
+                    print("THIS IS EXECUTING")
                     result = await session.call_tool(tool_name, **(params or {}))
+                    print("result",result)
                 
                 if result.content and isinstance(result.content[0], TextContent):
                     return result.content[0].text
@@ -54,11 +56,9 @@ async def call_mcp_server(tool_name: str, params=None):
         print(f"Could not connect to MCP server or call tool: {e}")
         raise HTTPException(status_code=503, detail="MCP server is unavailable.")
 
-# --- FastAPI Endpoints ---
-
 @app.get("/", response_class=HTMLResponse)
 async def get_home():
-    """Serves the main web interface, including the interactive view and email composer."""
+    """Serves the main web interface, now including Telegram functionality."""
     return HTMLResponse(content="""
     <!DOCTYPE html>
     <html>
@@ -83,6 +83,9 @@ async def get_home():
           #froms-search { margin: 4px; width: calc(100% - 8px); }
           .address-dropdown-content div { color: black; padding: 12px 16px; text-decoration: none; display: block; cursor: pointer; }
           .address-dropdown-content div:hover { background-color: #f1f1f1; }
+          .chat-container { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+          .chat-name { font-weight: bold; color: #0056b3; }
+          .message { margin-left: 15px; padding: 5px; border-left: 3px solid #ddd; }
         </style>
       </head>
       <body>
@@ -91,8 +94,10 @@ async def get_home():
             <button onclick="getMails()">1. Get Emails</button>
             <button onclick="getAndRenderCategories()">2. Get & View Categories</button>
             <button onclick="toggleComposer()">Compose Email</button>
+            <button onclick="syncTelegram()">Sync Telegram</button>
             
             <div id="InteractiveView" class="info-box">Get emails, then get & view categories to start.</div>
+            <div id="TelegramView" class="info-box" style="display:none;"></div>
 
             <div id="composer">
                 <h3>New Email</h3>
@@ -125,8 +130,12 @@ async def get_home():
         </div>
 
         <script>
+          // --- DOM Elements ---
           const interactiveDiv = document.getElementById("InteractiveView");
+          const telegramDiv = document.getElementById("TelegramView");
           const composerDiv = document.getElementById("composer");
+          
+          // --- Client-Side State ---
           let clientState = { subjectsToBody: {}, categorizedEmails: {}, fromAddresses: [] };
 
           // --- Interactive View Functions ---
@@ -156,10 +165,113 @@ async def get_home():
             }
           }
           
-          function renderCategoryList() { /* ... implementation from previous steps ... */ }
-          function renderSubjectList(categoryName) { /* ... implementation from previous steps ... */ }
-          function renderEmailView(subject) { /* ... implementation from previous steps ... */ }
-          async function summarizeEmail(subject) { /* ... implementation from previous steps ... */ }
+          function renderCategoryList() {
+              interactiveDiv.innerHTML = '';
+              const title = document.createElement('h3');
+              title.textContent = 'Click a Category to View Subjects:';
+              interactiveDiv.appendChild(title);
+
+              if (Object.keys(clientState.categorizedEmails).length === 0) {
+                  const p = document.createElement('p');
+                  p.textContent = 'No categories found.';
+                  interactiveDiv.appendChild(p);
+                  return;
+              }
+
+              for (const category in clientState.categorizedEmails) {
+                  const subjects = clientState.categorizedEmails[category];
+                  if (!Array.isArray(subjects)) continue;
+
+                  const listItem = document.createElement('div');
+                  listItem.className = 'list-item';
+                  listItem.textContent = category + ' (' + subjects.length + ' emails)';
+                  listItem.addEventListener('click', () => renderSubjectList(category));
+                  interactiveDiv.appendChild(listItem);
+              }
+          }
+
+          function renderSubjectList(categoryName) {
+              const subjects = clientState.categorizedEmails[categoryName];
+              interactiveDiv.innerHTML = '';
+              const title = document.createElement('h3');
+              title.textContent = 'Subjects in ' + categoryName + ':';
+              interactiveDiv.appendChild(title);
+
+              if (!Array.isArray(subjects)) {
+                  interactiveDiv.innerHTML += '<p>Error: Subject list is not valid.</p>';
+                  return;
+              }
+
+              subjects.forEach((subject, index) => {
+                  const listItem = document.createElement('div');
+                  listItem.className = 'list-item';
+                  listItem.textContent = (index + 1) + '. ' + subject;
+                  listItem.addEventListener('click', () => renderEmailView(subject));
+                  interactiveDiv.appendChild(listItem);
+              });
+          }
+
+          function renderEmailView(subject) {
+              const body = clientState.subjectsToBody[subject];
+              interactiveDiv.innerHTML = '';
+
+              const subjectHeader = document.createElement('h3');
+              subjectHeader.textContent = subject;
+
+              const summarizeBtn = document.createElement('button');
+              summarizeBtn.textContent = 'Summarize with AI';
+              summarizeBtn.addEventListener('click', () => summarizeEmail(subject));
+
+              const hr = document.createElement('hr');
+
+              const bodyDiv = document.createElement('div');
+              bodyDiv.style.whiteSpace = 'pre-wrap';
+              bodyDiv.textContent = body || 'Body not found.';
+
+              interactiveDiv.appendChild(subjectHeader);
+              interactiveDiv.appendChild(summarizeBtn);
+              interactiveDiv.appendChild(hr);
+              interactiveDiv.appendChild(bodyDiv);
+          }
+
+          async function summarizeEmail(subject) {
+              interactiveDiv.innerHTML = "<h3>Summarizing...</h3>";
+              try {
+                  const response = await fetch("/summarizeEmail", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ subject: subject })
+                  });
+                  const res = await response.json();
+                  if (!response.ok) throw new Error(res.detail);
+
+                  interactiveDiv.innerHTML = '';
+
+                  const summaryHeader = document.createElement('h3');
+                  summaryHeader.textContent = 'Summary for: ' + subject;
+
+                  const summaryDiv = document.createElement('div');
+                  summaryDiv.style.whiteSpace = 'pre-wrap';
+                  summaryDiv.style.backgroundColor = '#eef';
+                  summaryDiv.style.padding = '10px';
+                  summaryDiv.style.borderRadius = '5px';
+                  summaryDiv.textContent = res.summary;
+
+                  const hr = document.createElement('hr');
+
+                  const backBtn = document.createElement('button');
+                  backBtn.textContent = 'Back to Categories';
+                  backBtn.addEventListener('click', renderCategoryList);
+
+                  interactiveDiv.appendChild(summaryHeader);
+                  interactiveDiv.appendChild(summaryDiv);
+                  interactiveDiv.appendChild(hr);
+                  interactiveDiv.appendChild(backBtn);
+
+              } catch (error) {
+                  interactiveDiv.innerHTML = "<h3>ERROR</h3><p>" + error.message + "</p>";
+              }
+          }
 
           // --- Email Composer Functions ---
           let fromsVisible = false;
@@ -267,123 +379,55 @@ async def get_home():
                   statusDiv.textContent = "Error sending email: " + error.message;
               }
           }
-        </script>
-        
-        <script>
-            // --- This script contains the interactive view logic from previous steps ---
-            function renderCategoryList() {
-                interactiveDiv.innerHTML = '';
-                const title = document.createElement('h3');
-                title.textContent = 'Click a Category to View Subjects:';
-                interactiveDiv.appendChild(title);
 
-                if (Object.keys(clientState.categorizedEmails).length === 0) {
-                    const p = document.createElement('p');
-                    p.textContent = 'No categories found.';
-                    interactiveDiv.appendChild(p);
-                    return;
-                }
+          // --- NEW Telegram Functions ---
+          async function syncTelegram() {
+              telegramDiv.style.display = 'block';
+              telegramDiv.innerHTML = '<h4>Syncing Telegram messages...</h4>';
+              try {
+                  const response = await fetch("/syncTelegram", { method: "POST" });
+                  const res = await response.json();
+                  if (!response.ok) throw new Error(res.detail);
+                  
+                  renderTelegramMessages(res.messages);
+              } catch (error) {
+                  telegramDiv.innerHTML = '<h4>Error syncing Telegram:</h4><p>' + error.message + '</p>';
+              }
+          }
 
-                for (const category in clientState.categorizedEmails) {
-                    const subjects = clientState.categorizedEmails[category];
-                    if (!Array.isArray(subjects)) continue;
+          function renderTelegramMessages(data) {
+              telegramDiv.innerHTML = '<h3>Telegram Chats</h3>';
+              if (!data || Object.keys(data).length === 0) {
+                  telegramDiv.innerHTML += '<p>No messages found.</p>';
+                  return;
+              }
 
-                    const listItem = document.createElement('div');
-                    listItem.className = 'list-item';
-                    listItem.textContent = category + ' (' + subjects.length + ' emails)';
-                    listItem.addEventListener('click', () => renderSubjectList(category));
-                    interactiveDiv.appendChild(listItem);
-                }
-            }
+              for (const chatName in data) {
+                  if (chatName === "None" || !Array.isArray(data[chatName])) continue;
 
-            function renderSubjectList(categoryName) {
-                const subjects = clientState.categorizedEmails[categoryName];
-                interactiveDiv.innerHTML = '';
-                const title = document.createElement('h3');
-                title.textContent = 'Subjects in ' + categoryName + ':';
-                interactiveDiv.appendChild(title);
+                  const chatContainer = document.createElement('div');
+                  chatContainer.className = 'chat-container';
 
-                if (!Array.isArray(subjects)) {
-                    interactiveDiv.innerHTML += '<p>Error: Subject list is not valid.</p>';
-                    return;
-                }
+                  const nameHeader = document.createElement('div');
+                  nameHeader.className = 'chat-name';
+                  nameHeader.textContent = 'CHAT NAME: ' + chatName;
+                  chatContainer.appendChild(nameHeader);
 
-                subjects.forEach((subject, index) => {
-                    const listItem = document.createElement('div');
-                    listItem.className = 'list-item';
-                    listItem.textContent = (index + 1) + '. ' + subject;
-                    listItem.addEventListener('click', () => renderEmailView(subject));
-                    interactiveDiv.appendChild(listItem);
-                });
-            }
-
-            function renderEmailView(subject) {
-                const body = clientState.subjectsToBody[subject];
-                interactiveDiv.innerHTML = '';
-
-                const subjectHeader = document.createElement('h3');
-                subjectHeader.textContent = subject;
-
-                const summarizeBtn = document.createElement('button');
-                summarizeBtn.textContent = 'Summarize with AI';
-                summarizeBtn.addEventListener('click', () => summarizeEmail(subject));
-
-                const hr = document.createElement('hr');
-
-                const bodyDiv = document.createElement('div');
-                bodyDiv.style.whiteSpace = 'pre-wrap';
-                bodyDiv.textContent = body || 'Body not found.';
-
-                interactiveDiv.appendChild(subjectHeader);
-                interactiveDiv.appendChild(summarizeBtn);
-                interactiveDiv.appendChild(hr);
-                interactiveDiv.appendChild(bodyDiv);
-            }
-
-            async function summarizeEmail(subject) {
-                interactiveDiv.innerHTML = "<h3>Summarizing...</h3>";
-                try {
-                    const response = await fetch("/summarizeEmail", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ subject: subject })
-                    });
-                    const res = await response.json();
-                    if (!response.ok) throw new Error(res.detail);
-
-                    interactiveDiv.innerHTML = '';
-
-                    const summaryHeader = document.createElement('h3');
-                    summaryHeader.textContent = 'Summary for: ' + subject;
-
-                    const summaryDiv = document.createElement('div');
-                    summaryDiv.style.whiteSpace = 'pre-wrap';
-                    summaryDiv.style.backgroundColor = '#eef';
-                    summaryDiv.style.padding = '10px';
-                    summaryDiv.style.borderRadius = '5px';
-                    summaryDiv.textContent = res.summary;
-
-                    const hr = document.createElement('hr');
-
-                    const backBtn = document.createElement('button');
-                    backBtn.textContent = 'Back to Categories';
-                    backBtn.addEventListener('click', renderCategoryList);
-
-                    interactiveDiv.appendChild(summaryHeader);
-                    interactiveDiv.appendChild(summaryDiv);
-                    interactiveDiv.appendChild(hr);
-                    interactiveDiv.appendChild(backBtn);
-
-                } catch (error) {
-                    interactiveDiv.innerHTML = "<h3>ERROR</h3><p>" + error.message + "</p>";
-                }
-            }
+                  data[chatName].forEach((message, index) => {
+                      const messageDiv = document.createElement('div');
+                      messageDiv.className = 'message';
+                      messageDiv.textContent = (index + 1) + '. ' + message;
+                      chatContainer.appendChild(messageDiv);
+                  });
+                  telegramDiv.appendChild(chatContainer);
+              }
+          }
         </script>
       </body>
     </html>
     """)
 
-# --- Endpoints for Interactive View ---
+# --- Endpoints for Interactive View & Composer ---
 @app.post("/getMail")
 async def getting_mail():
     """Fetches emails and returns the subject-to-body map to the client."""
@@ -428,7 +472,6 @@ async def summarize_email_endpoint(request: SubjectRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- NEW Endpoints for Email Composer ---
 @app.post("/getFromAddresses")
 async def get_from_addresses():
     """Parses and returns a unique list of sender email addresses."""
@@ -447,7 +490,7 @@ async def get_from_addresses():
 async def send_email_endpoint(request: SendEmailRequest):
     """Endpoint to send a standard email."""
     try:
-        result = await call_mcp_server("send_emails", params=request)
+        result = await call_mcp_server("send_emails", params=request.dict())
         return {"message": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -456,10 +499,27 @@ async def send_email_endpoint(request: SendEmailRequest):
 async def generate_email_body_endpoint(request: GroqRequest):
     """Endpoint to get help from Groq."""
     try:
-        print("TYPE : ", type(request))
-        body = await call_mcp_server("send_mail_by_Groq", params={"prompt": request})
+        body = await call_mcp_server("send_mail_by_Groq", params=request.dict())
         return {"body": body}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- NEW Endpoint for Telegram ---
+@app.post("/syncTelegram")
+async def sync_telegram_endpoint():
+    """Endpoint to fetch and return Telegram messages."""
+    try:
+        print("Calling the api")
+        raw_response = await call_mcp_server("get_telegram_messages")
+        print("Got an response")
+        messages = json.loads(raw_response)
+        print(messages)
+        if "error" in messages:
+            raise HTTPException(status_code=500, detail=messages["error"])
+            
+        return {"messages": messages}
+    except Exception as e:
+        # Catch JSON parsing errors or other exceptions
         raise HTTPException(status_code=500, detail=str(e))
 
 
