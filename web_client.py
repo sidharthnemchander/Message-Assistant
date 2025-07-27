@@ -26,7 +26,10 @@ class SendEmailRequest(BaseModel):
 class GroqRequest(BaseModel):
     prompt: str
 
-# --- Helper Function to Call MCP Server ---
+class SendTelegramRequest(BaseModel):
+    to: str
+    body: str
+    
 async def call_mcp_server(tool_name: str, params=None):
     """Connects to the persistent MCP HTTP server and calls a tool."""
     try:
@@ -40,6 +43,9 @@ async def call_mcp_server(tool_name: str, params=None):
                         result = await session.call_tool(tool_name,{"subject" : params.subject, "to" : params.to, "body" : params.body})
                     elif tool_name == "send_mail_by_Groq" and isinstance(params,dict):
                         result = await session.call_tool(tool_name,{"prompt": params['prompt'].prompt})
+                    elif tool_name == "send_telegram_messages" and isinstance(params,SendTelegramRequest):
+                        result = await session.call_tool(tool_name,{"to": params.to, "body": params.body})
+                        print("Result : ", result)
                 else:
                     result = await session.call_tool(tool_name, **(params or {}))
                 
@@ -89,7 +95,8 @@ async def get_home():
             <button onclick="getAndRenderCategories()">2. Get & View Categories</button>
             <button onclick="toggleComposer()">Compose Email</button>
             <button onclick="syncTelegram()">Sync Telegram</button>
-            
+            <button onclick="toggleTelegramComposer()" style="background-color: #17a2b8;">Send Telegram</button>
+                        
             <div id="InteractiveView" class="info-box">Get emails, then get & view categories to start.</div>
             <div id="TelegramView" class="info-box" style="display:none;"></div>
 
@@ -122,15 +129,40 @@ async def get_home():
                 <button onclick="sendEmail()">Send Email</button>
             </div>
         </div>
-
+        <!-- NEW: Telegram Composer -->
+            <div id="telegram-composer">
+                <h3>New Telegram Message</h3>
+                <div id="telegram-composer-status" style="color: #17a2b8; margin-bottom: 10px; min-height: 1.2em;"></div>
+                <div class="form-group">
+                    <label for="telegram-to-address">To:</label>
+                    <div style="display: flex; align-items: center;">
+                        <input type="text" id="telegram-to-address" placeholder="Username or Chat Name">
+                        <div class="address-dropdown">
+                            <button class="inline-button" onclick="toggleUsernamesDropdown()">Usernames</button>
+                            <div id="usernames-dropdown" class="address-dropdown-content">
+                                <input type="text" id="usernames-search" onkeyup="filterUsernames()" placeholder="Search usernames...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="telegram-body">Message / Groq Prompt:</label>
+                    <div style="display: flex; align-items: center;">
+                        <textarea id="telegram-body" style="height: 100px;"></textarea>
+                        <button class="inline-button" onclick="getTelegramGroqHelp()">Help from Groq</button>
+                    </div>
+                </div>
+                <button onclick="sendTelegramMessage()" style="background-color: #17a2b8;">Send Message</button>
+            </div>
+        </div>
         <script>
           // --- DOM Elements ---
           const interactiveDiv = document.getElementById("InteractiveView");
           const telegramDiv = document.getElementById("TelegramView");
           const composerDiv = document.getElementById("composer");
+          const telegramComposerDiv = document.getElementById("telegram-composer");
           
-          // --- Client-Side State ---
-          let clientState = { subjectsToBody: {}, categorizedEmails: {}, fromAddresses: [] };
+          let clientState = { subjectsToBody: {}, categorizedEmails: {}, fromAddresses: [],telegramUsernames: [] };
 
           // --- Interactive View Functions ---
           async function getMails() {
@@ -374,7 +406,6 @@ async def get_home():
               }
           }
 
-          // --- NEW Telegram Functions ---
           async function syncTelegram() {
               telegramDiv.style.display = 'block';
               telegramDiv.innerHTML = '<h4>Syncing Telegram messages...</h4>';
@@ -414,6 +445,102 @@ async def get_home():
                       chatContainer.appendChild(messageDiv);
                   });
                   telegramDiv.appendChild(chatContainer);
+              }
+          }
+            let usernamesVisible = false;
+          function toggleTelegramComposer() {
+              const shouldBeVisible = telegramComposerDiv.style.display === 'none';
+              telegramComposerDiv.style.display = shouldBeVisible ? 'block' : 'none';
+              if (shouldBeVisible) {
+                  populateTelegramUsernames();
+              }
+          }
+
+          function populateTelegramUsernames() {
+              const dropdownContent = document.getElementById("usernames-dropdown");
+              dropdownContent.innerHTML = '<input type="text" id="usernames-search" onkeyup="filterUsernames()" placeholder="Search usernames...">';
+              if (clientState.telegramUsernames.length === 0) {
+                  const item = document.createElement('div');
+                  item.textContent = "Sync Telegram first";
+                  dropdownContent.appendChild(item);
+                  return;
+              }
+              clientState.telegramUsernames.forEach(name => {
+                  const item = document.createElement('div');
+                  item.textContent = name;
+                  item.onclick = () => {
+                      document.getElementById('telegram-to-address').value = name;
+                      toggleUsernamesDropdown(false);
+                  };
+                  dropdownContent.appendChild(item);
+              });
+          }
+
+          function toggleUsernamesDropdown(forceState) {
+              const dropdown = document.getElementById("usernames-dropdown");
+              usernamesVisible = forceState !== undefined ? forceState : !usernamesVisible;
+              dropdown.style.display = usernamesVisible ? 'block' : 'none';
+          }
+
+          function filterUsernames() {
+              const filter = document.getElementById("usernames-search").value.toUpperCase();
+              const items = document.getElementById("usernames-dropdown").querySelectorAll("div");
+              items.forEach(item => {
+                  item.style.display = item.textContent.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+              });
+          }
+
+          async function getTelegramGroqHelp() {
+              const bodyTextarea = document.getElementById('telegram-body');
+              const statusDiv = document.getElementById('telegram-composer-status');
+              const prompt = bodyTextarea.value;
+
+              if (!prompt) {
+                  statusDiv.textContent = "Please enter a prompt in the message box to get help from Groq.";
+                  return;
+              }
+              statusDiv.textContent = "Asking Groq for help...";
+              bodyTextarea.value = "Generating...";
+
+              try {
+                  const response = await fetch("/generateTelegramMessage", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ prompt: prompt })
+                  });
+                  const res = await response.json();
+                  if (!response.ok) throw new Error(res.detail);
+                  
+                  bodyTextarea.value = res.body;
+                  statusDiv.textContent = "Groq's reply generated!";
+              } catch (error) {
+                  statusDiv.textContent = "Error: " + error.message;
+                  bodyTextarea.value = "Failed to get reply from Groq.";
+              }
+          }
+
+          async function sendTelegramMessage() {
+              const to = document.getElementById('telegram-to-address').value;
+              const body = document.getElementById('telegram-body').value;
+              const statusDiv = document.getElementById('telegram-composer-status');
+
+              if (!to || !body) {
+                  statusDiv.textContent = "Error: 'To' and 'Message' fields are required.";
+                  return;
+              }
+              statusDiv.textContent = "Sending...";
+
+              try {
+                  const response = await fetch("/sendTelegramMessage", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ to: to, body: body })
+                  });
+                  const res = await response.json();
+                  if (!response.ok) throw new Error(res.detail);
+                  statusDiv.textContent = "Message sent successfully! Response: " + res.message;
+              } catch(error) {
+                  statusDiv.textContent = "Error sending message: " + error.message;
               }
           }
         </script>
@@ -517,6 +644,23 @@ async def sync_telegram_endpoint():
         # Catch JSON parsing errors or other exceptions
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/sendTelegramMessage")
+async def send_telegram_message_endpoint(request: SendTelegramRequest):
+    """Endpoint to send a Telegram message."""
+    try:
+        result = await call_mcp_server("send_telegram_messages", params=request)
+        return {"message": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/generateTelegramMessage")
+async def generate_telegram_message_endpoint(request: GroqRequest):
+    """Endpoint to get help from Groq for Telegram messages."""
+    try:
+        body = await call_mcp_server("message_groq", params=request)
+        return {"body": body}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     print("Starting web client on http://127.0.0.1:8000")
