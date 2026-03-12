@@ -4,6 +4,7 @@ from email.header import decode_header
 from typing import List, Dict, Optional
 from bs4 import BeautifulSoup
 import re
+from email.utils import parsedate_to_datetime
 
 class EmailFetchAgent:
     def __init__(self, email_address: str, app_password: str, imap_server: str = "imap.gmail.com"):
@@ -46,7 +47,7 @@ class EmailFetchAgent:
         all_id_list = all_ids[0].split()
         unread_id_list = set(unread_ids[0].split())
 
-        latest_ids = all_id_list[-40:]
+        latest_ids = all_id_list[-2:]
 
         results = []
 
@@ -57,6 +58,10 @@ class EmailFetchAgent:
                 for response in data:
                     if isinstance(response, tuple):
                         msg = message_from_bytes(response[1])
+
+                        #Handing Date
+                        date_raw = msg.get("Date")
+                        date = parsedate_to_datetime(date_raw).isoformat() if date_raw else None
 
                         # Handle subject more safely
                         subject = "(No Subject)"
@@ -105,7 +110,8 @@ class EmailFetchAgent:
                             "from": from_,
                             "subject": subject,
                             "body": body,
-                            "unread": is_unread
+                            "unread": is_unread,
+                            "date" : date
                         })
                         
             except Exception as e:

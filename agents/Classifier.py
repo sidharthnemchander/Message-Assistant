@@ -1,6 +1,4 @@
-from sentence_transformers import SentenceTransformer
-import numpy as np
-import faiss
+from transformers import pipeline
 import re
 
 
@@ -8,10 +6,13 @@ class ClassifierAgent:
 
     def __init__(self):
 
-        print("Loading embedding model...")
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        print("Loading zero-shot model...")
 
-        # categories
+        self.classifier = pipeline(
+            "zero-shot-classification",
+            model="knowledgator/comprehend_it-base"
+        )
+
         self.categories = [
             "Career / Jobs",
             "Social / Networking",
@@ -27,31 +28,6 @@ class ClassifierAgent:
             "Shopping",
             "Others"
         ]
-
-        # semantic descriptions
-        category_texts = [
-            "jobs hiring internship interview referral career opportunity",
-            "linkedin connection request networking social notification",
-            "discount coupon cashback promotional offer sale",
-            "newsletter weekly digest blog update announcement",
-            "webinar event meeting reminder calendar invite",
-            "security login alert suspicious login password reset",
-            "invoice bill payment receipt bank transaction payment confirmation",
-            "course certification learning platform internship result",
-            "system alert monitoring log uptime downtime server alert",
-            "verify email phone verification otp confirmation",
-            "leetcode codechef codeforces competitive programming contest",
-            "order delivery shipment purchase order confirmation tracking",
-            "other uncategorized email"
-        ]
-
-        print("Building FAISS index...")
-        embeddings = self.model.encode(category_texts)
-        embeddings = np.array(embeddings).astype("float32")
-
-        dimension = embeddings.shape[1]
-        self.index = faiss.IndexFlatL2(dimension)
-        self.index.add(embeddings) # type: ignore
 
         # rule-based patterns
         self.rules = {
@@ -100,14 +76,14 @@ class ClassifierAgent:
         return None
 
 
-    def embedding_classify(self, text):
+    def zero_shot_classify(self, text):
 
-        embedding = self.model.encode([text])
-        embedding = np.array(embedding).astype("float32")
+        result = self.classifier(
+            text,
+            candidate_labels=self.categories
+        )
 
-        distances, indices = self.index.search(embedding, k=1)# type: ignore
-
-        return self.categories[indices[0][0]]
+        return result["labels"][0]
 
 
     def classify_subject(self, subject):
@@ -122,4 +98,4 @@ class ClassifierAgent:
         if rule_result:
             return rule_result
 
-        return self.embedding_classify(subject)
+        return self.zero_shot_classify(subject)

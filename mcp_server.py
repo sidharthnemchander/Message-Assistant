@@ -1,6 +1,6 @@
 from mcp.server.fastmcp import FastMCP
 from agents.email_agent import EmailAgent
-from agents.classifier_agent import ClassifierAgent
+from agents.Classifier import ClassifierAgent
 from agents.LLMchatbot import LLMChatBot
 from agents.telegram_agent import TelegramAgent
 import json
@@ -370,6 +370,7 @@ async def chat_about_data(question: str) -> str:
     - If asked for specific category emails, list them with subjects and details
     - If asked for categorized emails, organize them clearly by category
     - Be direct and comprehensive in your response
+    - Always respond like a human . Don't respond like a bot
     - Format your response clearly with proper headings and bullet points
     - Don't mention functions or resources - just provide the information directly"""
     
