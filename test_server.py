@@ -3,12 +3,12 @@ import json
 from mcp_server_v2 import get_latest_emails, get_telegram_messages, exact_search, semantic_search
 
 async def r():
-    print("running get emails")
-    e = await get_latest_emails()
-    print(e)
+    # print("running get emails")
+    # e = await get_latest_emails()
+    # print(e)
     
-    t = await get_telegram_messages()
-    print(t)
+    # t = await get_telegram_messages()
+    # print(t)
     
     q = "SELECT source, sender, timestamp FROM metadata LIMIT 5"
     res1 = await exact_search(q)

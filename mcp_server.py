@@ -249,8 +249,18 @@ async def send_mail_by_Groq(prompt: str) -> str:
 @mcp.tool()
 async def get_telegram_messages():
     msgs = await telegram_bot.fetch_messages()
-    serialized = json.dumps(msgs)
-    server_state.update_telegram(msgs, list(msgs.keys()))
+    
+    # Create a new dictionary to hold just the text strings
+    text_only_msgs = {}
+    for chat_name, message_list in msgs.items():
+
+        text_only_msgs[chat_name] = [msg["text"] for msg in message_list] #type : ignore
+        
+    serialized = json.dumps(text_only_msgs)
+    
+    # Pass the text-only version to your server state so it doesn't break
+    server_state.update_telegram(text_only_msgs, list(text_only_msgs.keys()))
+    
     return serialized
 
 @mcp.tool()

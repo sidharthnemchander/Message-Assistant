@@ -33,6 +33,24 @@ def ingest_telegram(db_conn, tg_data):
     for chat_name, msgs in tg_data.items():
         for idx, msg in enumerate(msgs):
             msg_id = f"tg_{chat_name}_{idx}"
-            txt = msg if isinstance(msg, str) else str(msg)
             
-            add_msg(db_conn, msg_id, "telegram", chat_name, "", 1, txt,"This is a telegram messages")
+            if hasattr(msg, 'text') and msg.text:
+                txt = msg.text
+            elif hasattr(msg, 'caption') and msg.caption:
+
+                txt = msg.caption
+            else:
+
+                txt = msg.get('text', "") if isinstance(msg, dict) else ""
+            
+            txt = str(txt)
+                
+            if not txt.strip():
+                continue
+            
+            if hasattr(msg, 'date'):
+                msg_date = msg.get('date','')
+            else:
+                msg_date = msg.get('date', "") if isinstance(msg, dict) else ""
+            
+            add_msg(db_conn, msg_id, "telegram", chat_name, msg_date, 1, txt, "This is a telegram message")

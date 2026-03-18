@@ -18,3 +18,5 @@ wheels/
 *.session
 send_session.py
 telegram_session.session-journal
+data.db
+git

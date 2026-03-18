@@ -30,21 +30,22 @@ async def semantic_search(search_text: str, sql_filter: str = "", limit: int = 5
     cursor = db_conn.cursor()
     
     query = """
-        SELECT m.source, m.sender, m.timestamp, m.content 
+        SELECT m.source, m.sender, m.timestamp, m.content, v.distance 
         FROM vectors v
         JOIN metadata m ON v.id = m.id
-        WHERE v.embedding MATCH ?
+        WHERE v.embedding MATCH ? AND k = ?
     """
     
     if sql_filter:
         query += f" AND {sql_filter}"
         
-    query += " LIMIT ?"
+    query += " ORDER BY v.distance"
     
     try:
         cursor.execute(query, (json.dumps(vector), limit))
         rows = cursor.fetchall()
         return json.dumps(rows)
+        
     except Exception as e:
         return json.dumps({"error": str(e)})
     
