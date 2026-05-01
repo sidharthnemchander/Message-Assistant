@@ -39,19 +39,22 @@ class TelegramBotServer:
         async for dialog in dialog_gen: # type: ignore (This show a coroutine type error but its working tho)
             if chat_count >= 5:
                 break
-            
+
             chat_id = dialog.chat.id
             chat_name = dialog.chat.title or dialog.chat.first_name or "Unknown"
+            chat_date =  dialog.top_message.date
             messages = []
             history_gen = self.app.get_chat_history(chat_id, limit=3)
 
             async for msg in history_gen: # type: ignore (This show a coroutine type error but its working tho)
                 if msg.text:
-                    messages.append(msg.text)
+                    messages.append({"text" : msg.text,
+                                     "date" : str(msg.date) if msg.date else ""
+                                     })
             
             latest_messages[chat_name] = list(reversed(messages))
             chat_count += 1
-        
+
         self.messages_by_chat = latest_messages
         return self.messages_by_chat
 
